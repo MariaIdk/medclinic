@@ -1,14 +1,22 @@
 from django.db import models
+from django.utils import timezone
 
 class Patient(models.Model):
-    full_name = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    patronymic = models.CharField(max_length=100, blank=True, null=True)
     date_of_birth = models.DateField()
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20, unique=True)
     address = models.TextField()
 
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name} {self.patronymic or ''}".strip()
+
     def __str__(self):
-        return self.full_name
+        return self.get_full_name()
+    
 
 
 
@@ -17,31 +25,93 @@ class PatientDocument(models.Model):
     document_type = models.CharField(max_length=255)  # тип документа
     document_file = models.FileField(upload_to='patients/documents/')  # поле для PDF или других форматов
     created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.CharField(max_length=50, choices=[('patient', 'Patient'), ('doctor', 'Doctor')], default='patient')  # Кто прикрепил документ (Пациент или Врач)
+
 
     def __str__(self):
-        return f"Document for {self.patient.full_name} ({self.document_type})"
+        return f"Document for {self.patient.get_full_name()} ({self.document_type})"
 
 
+
+from django.core.exceptions import ValidationError
+from django.db import models
 
 class Visit(models.Model):
-    patient = models.ForeignKey(Patient, related_name='visits', on_delete=models.CASCADE)
-    doctor = models.ForeignKey('Doctor', related_name='visits', on_delete=models.SET_NULL, null=True)  # Связь с доктором через ID
+    patient = models.ForeignKey('Patient', related_name='visits', on_delete=models.CASCADE)
+    doctor = models.ForeignKey('Doctor', related_name='visits', on_delete=models.SET_NULL, null=True)
     visit_date = models.DateTimeField()
     visit_reason = models.TextField()
     is_cancelled = models.BooleanField(default=False)
-    visit_notes = models.TextField(null=True, blank=True)  # Записи по результатам осмотра/диагноз
-    conclusion = models.TextField(null=True, blank=True)  # Заключение врача
-    documents = models.ManyToManyField(PatientDocument, related_name='visit_documents', blank=True)  # Связь с документами
+    visit_notes = models.TextField(null=True, blank=True)
+    conclusion = models.TextField(null=True, blank=True)
+    documents = models.ManyToManyField('PatientDocument', related_name='visit_documents', blank=True)
+    was_completed = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Visit for {self.patient.full_name} on {self.visit_date}"
+        return f"Visit for {self.patient.get_full_name()} on {self.visit_date}"
+
+    def clean(self):
+        # Проверка врача
+        overlapping_doctor = Visit.objects.filter(
+            doctor=self.doctor,
+            visit_date=self.visit_date
+        ).exclude(pk=self.pk)
+
+        if overlapping_doctor.exists():
+            raise ValidationError("У этого врача уже запланирован приём в это время.")
+
+        # Проверка пациента
+        overlapping_patient = Visit.objects.filter(
+            patient=self.patient,
+            visit_date=self.visit_date
+        ).exclude(pk=self.pk)
+
+        if overlapping_patient.exists():
+            raise ValidationError("У этого пациента уже назначен приём в это время.")
 
     def save(self, *args, **kwargs):
-        # Если запись не отменена и дата посещения прошла, добавляем в историю
-        if not self.is_cancelled and self.visit_date <= timezone.now():
-            super().save(*args, **kwargs)
+        self.clean()  # Валидация перед сохранением
+
+        super().save(*args, **kwargs)
+
+        if self.was_completed:
             # Автоматически добавляем документы в личные документы пациента
             for document in self.documents.all():
                 document.patient.documents.add(document)
-        else:
-            super().save(*args, **kwargs)
+
+
+
+
+class Doctor(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    patronymic = models.CharField(max_length=100, blank=True, null=True)
+    specialty = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20, unique=True)
+    email = models.EmailField(unique=True)
+
+    previous_experience_years = models.PositiveIntegerField(default=0)  # Стаж до устройства
+    hired_date = models.DateField(default=timezone.now)  # Дата устройства
+
+    education = models.TextField()  # Образование: можно будет записывать как свободный текст
+
+    def __str__(self):
+        return f"{self.last_name} {self.first_name} ({self.specialty})"
+
+    @property
+    def total_experience_years(self):
+        """Общий стаж (предыдущий + в клинике)"""
+        delta = timezone.now().date() - self.hired_date
+        return self.previous_experience_years + delta.days // 365
+
+
+
+
+class DoctorDocument(models.Model):
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='documents')
+    document_type = models.CharField(max_length=255)  # тип документа
+    document_file = models.FileField(upload_to='doctor/documents/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Документ: {self.document_type} ({self.doctor})"

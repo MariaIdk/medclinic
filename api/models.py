@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 class Patient(models.Model):
     first_name = models.CharField(max_length=100)
@@ -28,17 +29,25 @@ class PatientDocument(models.Model):
     uploaded_by = models.CharField(max_length=50, choices=[('patient', 'Patient'), ('doctor', 'Doctor')], default='patient')  # Кто прикрепил документ (Пациент или Врач)
 
 
+    uploaded_by_doctor = models.ForeignKey(
+    'Doctor',
+    null=True,
+    blank=True,
+    on_delete=models.SET_NULL,
+    related_name='uploaded_patient_documents'
+    )
+
+
     def __str__(self):
         return f"Document for {self.patient.get_full_name()} ({self.document_type})"
 
 
 
-from django.core.exceptions import ValidationError
-from django.db import models
+
 
 class Visit(models.Model):
     patient = models.ForeignKey('Patient', related_name='visits', on_delete=models.CASCADE)
-    doctor = models.ForeignKey('Doctor', related_name='visits', on_delete=models.SET_NULL, null=True)
+    doctor = models.ForeignKey('Doctor', related_name='visits', on_delete=models.CASCADE, null=False)
     visit_date = models.DateTimeField()
     visit_reason = models.TextField()
     is_cancelled = models.BooleanField(default=False)
@@ -69,15 +78,17 @@ class Visit(models.Model):
         if overlapping_patient.exists():
             raise ValidationError("У этого пациента уже назначен приём в это время.")
 
+        # Если визит завершён, то visit_notes и conclusion должны быть обязательными
+        if self.was_completed:
+            if not self.visit_notes:
+                raise ValidationError("Visit notes are required if the visit is completed.")
+            if not self.conclusion:
+                raise ValidationError("Conclusion is required if the visit is completed.")
+
     def save(self, *args, **kwargs):
         self.clean()  # Валидация перед сохранением
 
         super().save(*args, **kwargs)
-
-        if self.was_completed:
-            # Автоматически добавляем документы в личные документы пациента
-            for document in self.documents.all():
-                document.patient.documents.add(document)
 
 
 

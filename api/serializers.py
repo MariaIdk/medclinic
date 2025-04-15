@@ -42,3 +42,6 @@ class DoctorDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorDocument
         fields = '__all__'
+
+
+

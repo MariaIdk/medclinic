@@ -2,6 +2,10 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
+from datetime import timedelta
+
+
+
 class Patient(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -126,3 +130,52 @@ class DoctorDocument(models.Model):
 
     def __str__(self):
         return f"Документ: {self.document_type} ({self.doctor})"
+    
+
+
+
+
+class DoctorSchedule(models.Model):
+    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE, related_name='schedules')
+    date = models.DateField()  # Конкретный день
+    start_time = models.TimeField()  # Время начала смены
+    end_time = models.TimeField()  # Время окончания смены
+    slot_duration = models.PositiveIntegerField(default=15)  # в минутах
+    room = models.CharField(max_length=10)
+
+    class Meta:
+        unique_together = ('doctor', 'date')  # У одного врача одно расписание на день
+
+    def __str__(self):
+        return f"Расписание {self.doctor} на {self.date}"
+
+    def get_slots(self):
+        """
+        Генерация временных слотов (возвращает список словарей с временем и статусом занятости)
+        """
+        from datetime import datetime, timedelta
+
+        slots = []
+        start_dt = datetime.combine(self.date, self.start_time)
+        end_dt = datetime.combine(self.date, self.end_time)
+        current = start_dt
+
+        while current + timedelta(minutes=self.slot_duration) <= end_dt:
+            visit_exists = Visit.objects.filter(
+                doctor=self.doctor,
+                visit_date=current,
+                is_cancelled=False
+            ).exists()
+
+            slots.append({
+                'time': current.time(),
+                'is_booked': visit_exists
+            })
+            current += timedelta(minutes=self.slot_duration)
+
+        return slots
+    
+    
+    
+
+

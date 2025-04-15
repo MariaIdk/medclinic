@@ -7,7 +7,6 @@ from .serializers import PatientSerializer, PatientDocumentSerializer, VisitSeri
 
 
 
-
 class PatientViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing patient instances.
@@ -150,3 +149,6 @@ class DoctorDocumentViewSet(viewsets.ModelViewSet):
         )
 
         return Response(DoctorDocumentSerializer(new_document).data)
+
+
+

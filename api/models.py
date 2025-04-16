@@ -1,8 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 
 
@@ -27,7 +26,7 @@ class Patient(models.Model):
 
 class PatientDocument(models.Model):
     patient = models.ForeignKey(Patient, related_name='documents', on_delete=models.CASCADE)
-    document_type = models.CharField(max_length=255)  # тип документа
+    description = models.CharField(max_length=255)  # тип документа
     document_file = models.FileField(upload_to='patients/documents/')  # поле для PDF или других форматов
     created_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.CharField(max_length=50, choices=[('patient', 'Patient'), ('doctor', 'Doctor')], default='patient')  # Кто прикрепил документ (Пациент или Врач)
@@ -43,56 +42,7 @@ class PatientDocument(models.Model):
 
 
     def __str__(self):
-        return f"Document for {self.patient.get_full_name()} ({self.document_type})"
-
-
-
-
-
-class Visit(models.Model):
-    patient = models.ForeignKey('Patient', related_name='visits', on_delete=models.CASCADE)
-    doctor = models.ForeignKey('Doctor', related_name='visits', on_delete=models.CASCADE, null=False)
-    visit_date = models.DateTimeField()
-    visit_reason = models.TextField()
-    is_cancelled = models.BooleanField(default=False)
-    visit_notes = models.TextField(null=True, blank=True)
-    conclusion = models.TextField(null=True, blank=True)
-    documents = models.ManyToManyField('PatientDocument', related_name='visit_documents', blank=True)
-    was_completed = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Visit for {self.patient.get_full_name()} on {self.visit_date}"
-
-    def clean(self):
-        # Проверка врача
-        overlapping_doctor = Visit.objects.filter(
-            doctor=self.doctor,
-            visit_date=self.visit_date
-        ).exclude(pk=self.pk)
-
-        if overlapping_doctor.exists():
-            raise ValidationError("У этого врача уже запланирован приём в это время.")
-
-        # Проверка пациента
-        overlapping_patient = Visit.objects.filter(
-            patient=self.patient,
-            visit_date=self.visit_date
-        ).exclude(pk=self.pk)
-
-        if overlapping_patient.exists():
-            raise ValidationError("У этого пациента уже назначен приём в это время.")
-
-        # Если визит завершён, то visit_notes и conclusion должны быть обязательными
-        if self.was_completed:
-            if not self.visit_notes:
-                raise ValidationError("Visit notes are required if the visit is completed.")
-            if not self.conclusion:
-                raise ValidationError("Conclusion is required if the visit is completed.")
-
-    def save(self, *args, **kwargs):
-        self.clean()  # Валидация перед сохранением
-
-        super().save(*args, **kwargs)
+        return f"Document for {self.patient.get_full_name()} ({self.description})"
 
 
 
@@ -124,53 +74,134 @@ class Doctor(models.Model):
 
 class DoctorDocument(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='documents')
-    document_type = models.CharField(max_length=255)  # тип документа
+    description = models.CharField(max_length=255)  # тип документа
     document_file = models.FileField(upload_to='doctor/documents/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Документ: {self.document_type} ({self.doctor})"
+        return f"Документ: {self.description} ({self.doctor})"
     
 
 
+ 
 
-
-class DoctorSchedule(models.Model):
-    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE, related_name='schedules')
-    date = models.DateField()  # Конкретный день
-    start_time = models.TimeField()  # Время начала смены
-    end_time = models.TimeField()  # Время окончания смены
-    slot_duration = models.PositiveIntegerField(default=15)  # в минутах
-    room = models.CharField(max_length=10)
-
-    class Meta:
-        unique_together = ('doctor', 'date')  # У одного врача одно расписание на день
+class Service(models.Model):
+    direction = models.CharField(max_length=100)  
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"Расписание {self.doctor} на {self.date}"
+        return f"{self.direction} - {self.name}"
+    
 
-    def get_slots(self):
-        """
-        Генерация временных слотов (возвращает список словарей с временем и статусом занятости)
-        """
-        from datetime import datetime, timedelta
+class ClinicSchedule(models.Model):
+    WEEKDAYS = [
+        (1, 'Понедельник'),
+        (2, 'Вторник'),
+        (3, 'Среда'),
+        (4, 'Четверг'),
+        (5, 'Пятница'),
+        (6, 'Суббота'),
+        (7, 'Воскресенье'),
+    ]
+    
+    direction = models.CharField(max_length=100)  # либо ForeignKey к Service/Направлению
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='schedules')
+    cabinet = models.CharField(max_length=10)
+    weekday = models.IntegerField(choices=WEEKDAYS)
+    specific_date = models.DateField(blank=True, null=True)  # если нужно для конкретного дня
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    appointment_duration = models.PositiveIntegerField(default=15)  # длительность приёма в минутах
 
-        slots = []
-        start_dt = datetime.combine(self.date, self.start_time)
-        end_dt = datetime.combine(self.date, self.end_time)
-        current = start_dt
+    def __str__(self):
+        return f"{self.direction} - {self.doctor} ({self.get_weekday_display()})"
 
-        while current + timedelta(minutes=self.slot_duration) <= end_dt:
-            visit_exists = Visit.objects.filter(
-                doctor=self.doctor,
-                visit_date=current,
-                is_cancelled=False
-            ).exists()
 
-            slots.append({
-                'time': current.time(),
-                'is_booked': visit_exists
-            })
-            current += timedelta(minutes=self.slot_duration)
 
-        return slots
+class Appointment(models.Model):
+    STATUS_CHOICES = [
+        ('scheduled', 'Назначен'),
+        ('in_progress', 'Идет'),
+        ('cancelled', 'Отменен'),
+        ('completed', 'Проведен'),
+        ('no_show', 'Пациент не пришел'),
+    ]
+
+    patient = models.ForeignKey('Patient', on_delete=models.CASCADE, related_name='appointments')
+    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE, related_name='appointments')
+    service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True, related_name='appointments')
+
+    appointment_date = models.DateField()
+    appointment_time = models.TimeField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    documents = models.ManyToManyField('PatientDocument', related_name='appointments', blank=True)
+    diagnosis = models.TextField(blank=True, null=True)
+    recommendations = models.TextField(blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)  # soft delete
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    def clean(self):
+        """Проверка на пересечение по времени у врача и пациента"""
+        start_dt = datetime.combine(self.appointment_date, self.appointment_time)
+
+        # Получаем расписание врача на этот день недели
+        weekday = self.appointment_date.isoweekday()  # 1 = Понедельник
+
+        schedule = ClinicSchedule.objects.filter(
+            doctor=self.doctor,
+            weekday=weekday
+        ).first()
+
+        if not schedule:
+            raise ValidationError("У врача нет расписания на этот день недели.")
+
+        # Определим длительность приёма
+        duration = schedule.appointment_duration or 15
+        end_dt = start_dt + timedelta(minutes=duration)
+
+        # Проверка пересечения у врача
+        overlapping_for_doctor = Appointment.objects.filter(
+            doctor=self.doctor,
+            appointment_date=self.appointment_date,
+        ).exclude(id=self.id).filter(
+            appointment_time__lt=end_dt.time(),
+        ).filter(
+            appointment_time__gte=self.appointment_time
+        )
+        if overlapping_for_doctor.exists():
+            raise ValidationError("У врача уже есть приём в это время.")
+
+        # Проверка пересечения у пациента
+        overlapping_for_patient = Appointment.objects.filter(
+            patient=self.patient,
+            appointment_date=self.appointment_date,
+        ).exclude(id=self.id).filter(
+            appointment_time__lt=end_dt.time(),
+        ).filter(
+            appointment_time__gte=self.appointment_time
+        )
+        if overlapping_for_patient.exists():
+            raise ValidationError("У пациента уже есть приём в это время.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.patient} - {self.appointment_date} {self.appointment_time} ({self.status})"
+    
+
+
+class License(models.Model):
+    description = models.CharField(max_length=255)
+    license_file = models.FileField(upload_to='licenses/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.description
+
+

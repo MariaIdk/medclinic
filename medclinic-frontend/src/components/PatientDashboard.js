@@ -4,6 +4,7 @@ import './PatientDashboard.css'; // Подключим стили
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
 import { getPatientDocuments } from '../api';
+import AppointmentSchedule from './AppointmentSchedule';
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
@@ -19,6 +20,12 @@ const PatientDashboard = ({ patientId }) => {
     }
   }, [selectedSection, patientId]);
 
+  {selectedSection === 'appointments' && (
+    <div className="section">
+      <AppointmentSchedule />
+    </div>
+  )}
+  
   return (
     <div className="dashboard">
       <header className="dashboard-header">

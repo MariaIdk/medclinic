@@ -1,113 +1,52 @@
-from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import Patient, PatientDocument, Visit, Doctor, DoctorDocument
-from .serializers import PatientSerializer, PatientDocumentSerializer, VisitSerializer, DoctorSerializer, DoctorDocumentSerializer
+from rest_framework import status
+from django.utils.dateparse import parse_date
+from openpyxl import load_workbook
+import datetime
 
 
+from rest_framework import viewsets
+from .models import (
+    Patient,
+    PatientDocument,
+    Doctor,
+    DoctorDocument,
+    Service,
+    ClinicSchedule,
+    Appointment,
+    License
+)
+from .serializers import (
+    PatientSerializer,
+    PatientDocumentSerializer,
+    DoctorSerializer,
+    DoctorDocumentSerializer,
+    ServiceSerializer,
+    ClinicScheduleSerializer,
+    AppointmentSerializer,
+    LicenseSerializer
+)
 
 class PatientViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing and editing patient instances.
+    API endpoint для операций с пациентами.
     """
     queryset = Patient.objects.all()
-    serializer_class = PatientSerializer  
-    
-
-    @action(detail=True, methods=['get'])
-    def documents(self, request, pk=None):
-        patient = self.get_object()
-        documents = patient.documents.all()
-        serializer = PatientDocumentSerializer(documents, many=True)
-        return Response(serializer.data)
-
-
-
-
+    serializer_class = PatientSerializer
 
 
 class PatientDocumentViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing and editing patient document instances.
+    API endpoint для операций с документами пациента.
     """
     queryset = PatientDocument.objects.all()
     serializer_class = PatientDocumentSerializer
 
-    def get_queryset(self):
-        return self.queryset.all()
-
-    @action(detail=False, methods=['post'])
-    def upload_document(self, request):
-        """
-        Загружаем документ для пациента.
-        """
-        patient_id = request.data.get('patient_id')
-        patient = get_object_or_404(Patient, id=patient_id)
-        document_file = request.FILES.get('document_file')
-        document_type = request.data.get('document_type', 'анализы')
-        uploaded_by = request.data.get('uploaded_by', 'patient')
-
-        new_document = PatientDocument.objects.create(
-            patient=patient,
-            document_file=document_file,
-            document_type=document_type,
-            uploaded_by=uploaded_by
-        )
-        return Response(PatientDocumentSerializer(new_document).data)
-    
-    
-
-  
-
-class VisitViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for viewing and editing visit instances.
-    """
-    queryset = Visit.objects.all()
-    serializer_class = VisitSerializer
-
-    def get_queryset(self):
-        """
-        Фильтруем визиты по пациенту.
-        """
-        patient_id = self.request.query_params.get('patient_id')
-        if patient_id:
-            return Visit.objects.filter(patient_id=patient_id)
-        return Visit.objects.all()
-
-    @action(detail=True, methods=['post'])
-    def add_conclusion_and_documents(self, request, pk=None):
-        """
-        Добавляем заключение и документы для посещения.
-        """
-        visit = self.get_object()
-        conclusion = request.data.get('conclusion')
-        document_files = request.FILES.getlist('documents')  # Получаем список файлов документов
-        uploaded_by = request.data.get('uploaded_by', 'doctor')  # Загружающий (врач по умолчанию)
-
-        # Добавляем заключение
-        visit.conclusion = conclusion
-        visit.was_completed = True  # Помечаем визит как завершённый
-        visit.save()
-
-        # Добавляем документы в визит
-        for document_file in document_files:
-            document_type = request.data.get('document_type')  # Тип документа, например "анализы"
-            document = PatientDocument.objects.create(
-                patient=visit.patient,
-                document_file=document_file,
-                document_type=document_type,
-                uploaded_by=uploaded_by
-            )
-            visit.documents.add(document)
-
-        return Response(VisitSerializer(visit).data)
-
 
 class DoctorViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing and editing doctor instances.
+    API endpoint для операций с врачами.
     """
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
@@ -115,36 +54,88 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
 class DoctorDocumentViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing and editing doctor document instances.
+    API endpoint для операций с документами врача.
     """
     queryset = DoctorDocument.objects.all()
     serializer_class = DoctorDocumentSerializer
 
-    def get_queryset(self):
-        """
-        Фильтруем документы по врачу.
-        """
-        doctor_id = self.kwargs.get('doctor_id')
-        if doctor_id:
-            return self.queryset.filter(doctor__id=doctor_id)
-        return self.queryset
 
-    @action(detail=True, methods=['post'])
-    def upload_document(self, request, pk=None):
-        """
-        Загружаем документ для врача.
-        """
-        doctor = self.get_object()
-        document_file = request.data.get('document_file')
-        document_type = request.data.get('document_type')
-        uploaded_by = request.user  # Загружающий врач
+class ServiceViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint для операций с услугами.
+    """
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
 
-        # Создаём новый документ
-        new_document = DoctorDocument.objects.create(
-            doctor=doctor,
-            document_file=document_file,
-            document_type=document_type,
-            uploaded_by=uploaded_by
-        )
 
-        return Response(DoctorDocumentSerializer(new_document).data)
+class ClinicScheduleViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint для операций с расписанием клиники.
+    """
+    queryset = ClinicSchedule.objects.all()
+    serializer_class = ClinicScheduleSerializer
+
+
+class AppointmentViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint для операций с приёмами.
+    Фильтрация по is_deleted=False исключает "мягко удалённые" записи.
+    """
+    queryset = Appointment.objects.filter(is_deleted=False)
+    serializer_class = AppointmentSerializer
+
+
+class LicenseViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint для операций с лицензиями клиники.
+    """
+    queryset = License.objects.all()
+    serializer_class = LicenseSerializer
+
+
+# Направление | Врач (ФИО)  | Кабинет | День недели | Время начала | Время конца | Дата (необяз.) | Длительность
+# Кардиология | Иванов И.И. |   101   | Понедельник |     08:00    |    12:00    | (можно пусто)  | 15
+# Терапия     | Петрова А.В.|   102   |   Вторник   |     13:00    |    17:00    |   2025-04-20   | 20
+
+
+class ScheduleUploadView(APIView):
+    def post(self, request):
+        excel_file = request.FILES.get("file")
+
+        if not excel_file:
+            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            wb = load_workbook(excel_file)
+            sheet = wb.active
+
+            for i, row in enumerate(sheet.iter_rows(min_row=2, values_only=True)):  # skip header
+                direction, doctor_name, cabinet, weekday_str, start, end, specific_date, duration = row
+
+                # Поиск врача по ФИО
+                try:
+                    last, first, patronymic = doctor_name.split()
+                    doctor = Doctor.objects.get(last_name=last, first_name=first, patronymic=patronymic)
+                except Exception:
+                    return Response({"error": f"Doctor not found for row {i+2}"}, status=status.HTTP_400_BAD_REQUEST)
+
+                weekday_map = {
+                    'Понедельник': 1, 'Вторник': 2, 'Среда': 3,
+                    'Четверг': 4, 'Пятница': 5, 'Суббота': 6, 'Воскресенье': 7
+                }
+
+                ClinicSchedule.objects.create(
+                    direction=direction,
+                    doctor=doctor,
+                    cabinet=str(cabinet),
+                    weekday=weekday_map.get(weekday_str, 1),
+                    specific_date=parse_date(str(specific_date)) if specific_date else None,
+                    start_time=start,
+                    end_time=end,
+                    appointment_duration=int(duration)
+                )
+
+            return Response({"status": "Расписание загружено успешно!"})
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

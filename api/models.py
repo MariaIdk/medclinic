@@ -174,8 +174,3 @@ class DoctorSchedule(models.Model):
             current += timedelta(minutes=self.slot_duration)
 
         return slots
-    
-    
-    
-
-

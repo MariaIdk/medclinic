@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './PatientDashboard.css'; // Подключим стили
 
-const PatientDashboard = () => {
+import PatientDocumentList from './PatientDocumentList';
+import DocumentUpload from './DocumentUpload';
+import { getPatientDocuments } from '../api';
+
+const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
+  const [documents, setDocuments] = useState([]);
 
   const handleSectionClick = (section) => {
     setSelectedSection(section);
   };
+
+  useEffect(() => {
+    if (selectedSection === 'documents') {
+      getPatientDocuments(patientId).then(setDocuments);
+    }
+  }, [selectedSection, patientId]);
 
   return (
     <div className="dashboard">
@@ -33,12 +44,8 @@ const PatientDashboard = () => {
               <li>ФИО: Иванов Иван Иванович</li>
               <li>Телефон: +7 900 123 45 67</li>
               <li>Почта: ivanov@example.com</li>
-              <li>
-                <button>Редактировать информацию</button>
-              </li>
-              <li>
-                <button>Удалить учетную запись</button>
-              </li>
+              <li><button>Редактировать информацию</button></li>
+              <li><button className="danger">Удалить учетную запись</button></li>
             </ul>
           </div>
         )}
@@ -56,7 +63,6 @@ const PatientDashboard = () => {
             <ul>
               <li>Прием 1: 20.04.2025 - Доктор: Петров Петр Петрович - Причина: осмотр - Статус: Не отменен</li>
               <li>Прием 2: 22.04.2025 - Доктор: Сидоров Сидор Сидорович - Причина: анализы - Статус: Отменен</li>
-              {/* Здесь будет список всех записей */}
             </ul>
           </div>
         )}
@@ -64,12 +70,8 @@ const PatientDashboard = () => {
         {selectedSection === 'documents' && (
           <div className="section">
             <h2>Мои документы</h2>
-            <ul>
-              <li>Справка 1</li>
-              <li>Рентгеновский снимок</li>
-              {/* Здесь будет список всех документов */}
-            </ul>
-            <button>Добавить документ</button>
+            <PatientDocumentList documents={documents} />
+            <DocumentUpload patientId={patientId} />
           </div>
         )}
 
@@ -85,9 +87,8 @@ const PatientDashboard = () => {
           <div className="section">
             <h2>История посещений</h2>
             <ul>
-              <li>Прием 1: 20.04.2025 - Доктор: Петров Петр Петрович - Причина: осмотр - Статус: Не отменен - Заключение: Все хорошо</li>
-              <li>Прием 2: 22.04.2025 - Доктор: Сидоров Сидор Сидорович - Причина: анализы - Статус: Отменен</li>
-              {/* Здесь будет список посещений */}
+              <li>Прием 1: 20.04.2025 - Доктор: Петров Петр Петрович - Причина: осмотр - Заключение: Все хорошо</li>
+              <li>Прием 2: 22.04.2025 - Доктор: Сидоров Сидор Сидорович - Причина: анализы - Заключение: нет</li>
             </ul>
           </div>
         )}
@@ -98,7 +99,6 @@ const PatientDashboard = () => {
             <ul>
               <li>Выписка 1: 20.04.2025 - Диагноз: Простуда</li>
               <li>Выписка 2: 22.04.2025 - Диагноз: Пневмония</li>
-              {/* Здесь будут выписки */}
             </ul>
           </div>
         )}

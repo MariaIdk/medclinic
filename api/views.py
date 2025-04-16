@@ -37,27 +37,26 @@ class PatientDocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.all()
 
+    @action(detail=False, methods=['post'])
+    def upload_document(self, request):
+        """
+        Загружаем документ для пациента.
+        """
+        patient_id = request.data.get('patient_id')
+        patient = get_object_or_404(Patient, id=patient_id)
+        document_file = request.FILES.get('document_file')
+        document_type = request.data.get('document_type', 'анализы')
+        uploaded_by = request.data.get('uploaded_by', 'patient')
+
+        new_document = PatientDocument.objects.create(
+            patient=patient,
+            document_file=document_file,
+            document_type=document_type,
+            uploaded_by=uploaded_by
+        )
+        return Response(PatientDocumentSerializer(new_document).data)
     
-
-
-    # @action(detail=True, methods=['post'])
-    # def upload_document(self, request, pk=None):
-    #     """
-    #     Загружаем документ для пациента.
-    #     """
-    #     patient = self.get_object()
-    #     document_file = request.data.get('document_file')
-    #     document_type = request.data.get('document_type')
-    #     uploaded_by = request.data.get('uploaded_by')  # Кто загружает (пациент или врач)
-
-    #     new_document = PatientDocument.objects.create(
-    #         patient=patient,
-    #         document_file=document_file,
-    #         document_type=document_type,
-    #         uploaded_by=uploaded_by
-    #     )
-    #     return Response(PatientDocumentSerializer(new_document).data)
-
+    
 
   
 
@@ -149,6 +148,3 @@ class DoctorDocumentViewSet(viewsets.ModelViewSet):
         )
 
         return Response(DoctorDocumentSerializer(new_document).data)
-
-
-

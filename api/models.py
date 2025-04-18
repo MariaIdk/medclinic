@@ -46,12 +46,21 @@ class PatientDocument(models.Model):
 
 
 
+class Specialty(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+
 
 class Doctor(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     patronymic = models.CharField(max_length=100, blank=True, null=True)
-    specialty = models.CharField(max_length=100)
+    # specialty = models.CharField(max_length=100)
+    specialty = models.ForeignKey(Specialty, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=20, unique=True)
     email = models.EmailField(unique=True)
 
@@ -86,7 +95,7 @@ class DoctorDocument(models.Model):
  
 
 class Service(models.Model):
-    direction = models.CharField(max_length=100)  
+    direction = models.ForeignKey(Specialty, on_delete=models.CASCADE)  
     name = models.CharField(max_length=100)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -106,7 +115,7 @@ class ClinicSchedule(models.Model):
         (7, 'Воскресенье'),
     ]
     
-    direction = models.CharField(max_length=100)  # либо ForeignKey к Service/Направлению
+    direction = models.ForeignKey(Specialty, on_delete=models.CASCADE) 
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='schedules')
     cabinet = models.CharField(max_length=10)
     weekday = models.IntegerField(choices=WEEKDAYS)
@@ -203,5 +212,6 @@ class License(models.Model):
 
     def __str__(self):
         return self.description
+
 
 

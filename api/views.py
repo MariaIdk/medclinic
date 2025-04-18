@@ -4,6 +4,7 @@ from rest_framework import status
 from django.utils.dateparse import parse_date
 from openpyxl import load_workbook
 import datetime
+from django.http import JsonResponse
 
 
 from rest_framework import viewsets
@@ -44,12 +45,23 @@ class PatientDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = PatientDocumentSerializer
 
 
+# class DoctorViewSet(viewsets.ModelViewSet):
+#     """
+#     API endpoint для операций с врачами.
+#     """
+#     queryset = Doctor.objects.all()
+#     serializer_class = DoctorSerializer
+
 class DoctorViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint для операций с врачами.
-    """
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        specialty = self.request.query_params.get('specialty')
+        if specialty:
+            return self.queryset.filter(specialty=specialty)
+        return self.queryset
 
 
 class DoctorDocumentViewSet(viewsets.ModelViewSet):
@@ -60,29 +72,63 @@ class DoctorDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DoctorDocumentSerializer
 
 
+# class ServiceViewSet(viewsets.ModelViewSet):
+#     """
+#     API endpoint для операций с услугами.
+#     """
+#     queryset = Service.objects.all()
+#     serializer_class = ServiceSerializer
+
+
 class ServiceViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint для операций с услугами.
-    """
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    http_method_names = ['get']
+
+
+# class ClinicScheduleViewSet(viewsets.ModelViewSet):
+#     """
+#     API endpoint для операций с расписанием клиники.
+#     """
+#     queryset = ClinicSchedule.objects.all()
+#     serializer_class = ClinicScheduleSerializer
 
 
 class ClinicScheduleViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint для операций с расписанием клиники.
-    """
     queryset = ClinicSchedule.objects.all()
     serializer_class = ClinicScheduleSerializer
+    http_method_names = ['get']
 
+    def get_queryset(self):
+        doctor_id = self.request.query_params.get('doctor')
+        weekday = self.request.query_params.get('weekday')
+        queryset = self.queryset
+
+        if doctor_id:
+            queryset = queryset.filter(doctor__id=doctor_id)
+        if weekday:
+            queryset = queryset.filter(weekday=weekday)
+
+        return queryset
+
+
+# class AppointmentViewSet(viewsets.ModelViewSet):
+#     """
+#     API endpoint для операций с приёмами.
+#     Фильтрация по is_deleted=False исключает "мягко удалённые" записи.
+#     """
+#     queryset = Appointment.objects.filter(is_deleted=False)
+#     serializer_class = AppointmentSerializer
 
 class AppointmentViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint для операций с приёмами.
-    Фильтрация по is_deleted=False исключает "мягко удалённые" записи.
-    """
-    queryset = Appointment.objects.filter(is_deleted=False)
+    queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
+
+    def perform_create(self, serializer):
+        # При необходимости — дополнительные проверки
+        serializer.save()
+
+
 
 
 class LicenseViewSet(viewsets.ModelViewSet):
@@ -139,3 +185,10 @@ class ScheduleUploadView(APIView):
         
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+def get_doctors_by_specialty(request):
+    specialty_id = request.GET.get('specialty_id')
+    doctors = Doctor.objects.filter(specialty_id=specialty_id).values('id', 'first_name', 'last_name')
+    return JsonResponse(list(doctors), safe=False)

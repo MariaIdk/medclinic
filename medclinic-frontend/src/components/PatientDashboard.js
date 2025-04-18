@@ -4,7 +4,9 @@ import './PatientDashboard.css'; // Подключим стили
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
 import { getPatientDocuments } from '../api';
-import AppointmentSchedule from './AppointmentSchedule';
+// import AppointmentSchedule from './AppointmentSchedule';
+import AppointmentForm from './AppointmentForm';
+
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
@@ -20,12 +22,8 @@ const PatientDashboard = ({ patientId }) => {
     }
   }, [selectedSection, patientId]);
 
-  {selectedSection === 'appointments' && (
-    <div className="section">
-      <AppointmentSchedule />
-    </div>
-  )}
-  
+
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -58,10 +56,11 @@ const PatientDashboard = ({ patientId }) => {
         )}
 
         {selectedSection === 'appointments' && (
-          <div className="section">
-            <h2>Запись к врачу</h2>
-            <p>Здесь будет форма для записи к врачу</p>
-          </div>
+          // <div className="section">
+          //   <h2>Запись к врачу</h2>
+          //   <p>Здесь будет форма для записи к врачу</p>
+          // </div>
+          <AppointmentForm patientId={patientId} />
         )}
 
         {selectedSection === 'myRecords' && (

@@ -5,7 +5,7 @@ from django.utils.dateparse import parse_date
 from openpyxl import load_workbook
 import datetime
 from django.http import JsonResponse
-
+from rest_framework import generics
 
 from rest_framework import viewsets
 from .models import (
@@ -16,7 +16,8 @@ from .models import (
     Service,
     ClinicSchedule,
     Appointment,
-    License
+    License,
+    Specialty
 )
 from .serializers import (
     PatientSerializer,
@@ -26,7 +27,8 @@ from .serializers import (
     ServiceSerializer,
     ClinicScheduleSerializer,
     AppointmentSerializer,
-    LicenseSerializer
+    LicenseSerializer,
+    SpecialtySerializer
 )
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -192,3 +194,13 @@ def get_doctors_by_specialty(request):
     specialty_id = request.GET.get('specialty_id')
     doctors = Doctor.objects.filter(specialty_id=specialty_id).values('id', 'first_name', 'last_name')
     return JsonResponse(list(doctors), safe=False)
+    
+
+
+class SpecialtyList(generics.ListAPIView):
+    queryset = Specialty.objects.all()
+    serializer_class = SpecialtySerializer
+
+class ClinicScheduleList(generics.ListAPIView):
+    queryset = ClinicSchedule.objects.all()
+    serializer_class = ClinicScheduleSerializer

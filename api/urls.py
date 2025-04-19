@@ -30,4 +30,6 @@ urlpatterns = router.urls
 urlpatterns += [
     path('upload-schedule/', ScheduleUploadView.as_view(), name='upload-schedule'),
     path('ajax/get-doctors/', views.get_doctors_by_specialty, name='get_doctors_by_specialty'),
+    path('specialties/', views.SpecialtyList.as_view(), name='specialties'),
+    path('clinic-schedules/', views.ClinicScheduleList.as_view(), name='clinic-schedules'),
 ]

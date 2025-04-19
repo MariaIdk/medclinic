@@ -7,7 +7,8 @@ from .models import (
     Service,
     ClinicSchedule,
     Appointment,
-    License
+    License,
+    Specialty
 )
 
 
@@ -42,14 +43,24 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ClinicScheduleSerializer(serializers.ModelSerializer):
-    weekday_display = serializers.CharField(source='get_weekday_display', read_only=True)
+# class ClinicScheduleSerializer(serializers.ModelSerializer):
+#     weekday_display = serializers.CharField(source='get_weekday_display', read_only=True)
     
+#     class Meta:
+#         model = ClinicSchedule
+#         fields = '__all__'
+#         # Если хочется добавить отображение дня недели, например: 
+#         # fields = ['id', 'direction', 'doctor', 'cabinet', 'weekday', 'weekday_display', 'specific_date', 'start_time', 'end_time', 'appointment_duration']
+
+# serializers.py
+class ClinicScheduleSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.__str__', read_only=True)
     class Meta:
         model = ClinicSchedule
-        fields = '__all__'
-        # Если хочется добавить отображение дня недели, например: 
-        # fields = ['id', 'direction', 'doctor', 'cabinet', 'weekday', 'weekday_display', 'specific_date', 'start_time', 'end_time', 'appointment_duration']
+        fields = [
+            'id', 'direction', 'doctor', 'doctor_name',
+            'cabinet', 'weekday', 'start_time', 'end_time', 'appointment_duration'
+        ]
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
@@ -89,3 +100,9 @@ class LicenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = License
         fields = '__all__'
+
+class SpecialtySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specialty
+        fields = '__all__'
+

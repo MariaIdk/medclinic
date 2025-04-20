@@ -1,0 +1,50 @@
+/* src/components/AppointmentSchedule.css */
+
+.schedule-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  
+  .schedule-header {
+    margin-bottom: 0.5rem;
+  }
+  
+  .schedule-header label {
+    margin-right: 0.5rem;
+  }
+  
+  .schedule-grid {
+    display: grid;
+    /* 2 столбца (врач, кабинет) + 6 дней недели */
+    grid-template-columns: 2fr 1fr repeat(6, 1fr);
+    border: 1px solid #ccc;
+  }
+  
+  .cell {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    text-align: center;
+    min-width: 80px;
+  }
+  
+  .header {
+    background-color: #f7f7f7;
+    font-weight: bold;
+  }
+  
+  .timeslot {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .timeslot.active:hover {
+    background-color: #e0f7fa;
+  }
+  
+  .timeslot.inactive {
+    background-color: #fafafa;
+    color: #999;
+  }
+  

@@ -1,6 +1,6 @@
 // src/components/AppointmentSchedule.js
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import "./AppointmentSchedule.css";
 
 const weekdays = [
   { value: 1, label: "Пн" },
@@ -11,111 +11,137 @@ const weekdays = [
   { value: 6, label: "Сб" },
 ];
 
-export default function AppointmentSchedule({ onDoctorSelect }) {
+// Форматирует "HH:MM:SS" → "HH:MM"
+function formatTime(str) {
+  if (!str) return "";
+  const [h, m] = str.split(":");
+  return `${h.padStart(2, "0")}\u003A${m.padStart(2, "0")}`;
+}
+
+export default function AppointmentSchedule({ onTimeClick }) {
   const [schedules, setSchedules] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [filteredSchedules, setFilteredSchedules] = useState([]);
-  const [selectedSpecialty, setSelectedSpecialty] = useState("");
+  const [filteredMap, setFilteredMap] = useState({});
+
+  const [selectedSpec, setSelectedSpec] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedWeekday, setSelectedWeekday] = useState("");
 
-  // Загрузка расписаний и списка специализаций
+  // Загрузка расписаний и направлений
   useEffect(() => {
-    axios.get('http://localhost:8000/api/clinic-schedules/')
-      .then(res => {
-        setSchedules(res.data);
-      })
-      .catch(err => console.error("❌ Ошибка загрузки расписания", err));
+    fetch("http://localhost:8000/api/clinic-schedules/")
+      .then(res => res.json())
+      .then(data => setSchedules(data))
+      .catch(console.error);
 
-    axios.get('http://localhost:8000/api/specialties/')
-      .then(res => setSpecialties(res.data))
-      .catch(err => console.error("❌ Ошибка загрузки направлений", err));
+    fetch("http://localhost:8000/api/specialties/")
+      .then(res => res.json())
+      .then(data => setSpecialties(data))
+      .catch(console.error);
   }, []);
 
-  // Пересчёт фильтрованного массива и списка врачей для селекта
+  // Обновляем список врачей при выборе направления
+  useEffect(() => {
+    const docs = schedules
+      .filter(s => !selectedSpec || s.direction === +selectedSpec)
+      .map(s => ({ id: s.doctor, name: s.doctor_name }))
+      .filter((v, i, a) => a.findIndex(x => x.id === v.id) === i);
+    setDoctors(docs);
+    // Сбросим выбор врача и дня
+    setSelectedDoctor("");
+    setSelectedWeekday("");
+  }, [schedules, selectedSpec]);
+
+  // Фильтрация и группировка
   useEffect(() => {
     let arr = schedules;
-    if (selectedSpecialty) arr = arr.filter(s => s.direction === +selectedSpecialty);
-    if (selectedDoctor)    arr = arr.filter(s => s.doctor === +selectedDoctor);
-    if (selectedWeekday)   arr = arr.filter(s => s.weekday === +selectedWeekday);
-    setFilteredSchedules(arr);
+    if (selectedSpec) arr = arr.filter(s => s.direction === +selectedSpec);
+    if (selectedDoctor) arr = arr.filter(s => s.doctor === +selectedDoctor);
+    if (selectedWeekday) arr = arr.filter(s => s.weekday === +selectedWeekday);
 
-    const docs = schedules
-      .filter(s => !selectedSpecialty || s.direction === +selectedSpecialty)
-      .map(s => ({ id: s.doctor, name: s.doctor_name }))
-      .filter((v, i, self) => self.findIndex(d => d.id === v.id) === i);
-    setDoctors(docs);
-  }, [schedules, selectedSpecialty, selectedDoctor, selectedWeekday]);
-
-  // Группируем по специализации → врачу → дню недели
-  const grouped = {};
-  filteredSchedules.forEach(s => {
-    const specName = specialties.find(sp => sp.id === s.direction)?.name || "Без направления";
-    grouped[specName] = grouped[specName] || {};
-    grouped[specName][s.doctor_name] = grouped[specName][s.doctor_name] || { cabinet: s.cabinet, days: {} };
-    grouped[specName][s.doctor_name].days[s.weekday] = `${s.start_time}–${s.end_time}`;
-  });
+    const map = {};
+    arr.forEach(s => {
+      const name = s.doctor_name;
+      if (!map[name]) map[name] = { cabinet: s.cabinet, days: {} };
+      map[name].days[s.weekday] = [s.start_time, s.end_time];
+    });
+    setFilteredMap(map);
+  }, [schedules, selectedSpec, selectedDoctor, selectedWeekday]);
 
   return (
-    <div className="appointment-schedule">
-      <h2>Запись к врачу</h2>
-
-      <div className="filters">
-        <select value={selectedSpecialty} onChange={e => setSelectedSpecialty(e.target.value)}>
-          <option value="">— выбрать —</option>
-          {specialties.map(sp =>
+    <div className="schedule-container">
+      <div className="schedule-header">
+        <label htmlFor="spec-select">Направление:</label>
+        <select
+          id="spec-select"
+          value={selectedSpec}
+          onChange={e => setSelectedSpec(e.target.value)}
+        >
+          <option value="">Все</option>
+          {specialties.map(sp => (
             <option key={sp.id} value={sp.id}>{sp.name}</option>
-          )}
+          ))}
         </select>
 
-        {selectedSpecialty && (
-          <>
-            <select value={selectedDoctor} onChange={e => setSelectedDoctor(e.target.value)}>
-              <option value="">Все врачи</option>
-              {doctors.map(d =>
-                <option key={d.id} value={d.id}>{d.name}</option>
-              )}
-            </select>
+        <label htmlFor="doc-select">Врач:</label>
+        <select
+          id="doc-select"
+          value={selectedDoctor}
+          onChange={e => setSelectedDoctor(e.target.value)}
+        >
+          <option value="">Все</option>
+          {doctors.map(d => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
 
-            <select value={selectedWeekday} onChange={e => setSelectedWeekday(e.target.value)}>
-              <option value="">Все дни</option>
-              {weekdays.map(w =>
-                <option key={w.value} value={w.value}>{w.label}</option>
-              )}
-            </select>
-          </>
-        )}
+        <label htmlFor="day-select">День:</label>
+        <select
+          id="day-select"
+          value={selectedWeekday}
+          onChange={e => setSelectedWeekday(e.target.value)}
+        >
+          <option value="">Все</option>
+          {weekdays.map(w => (
+            <option key={w.value} value={w.value}>{w.label}</option>
+          ))}
+        </select>
       </div>
 
-      {!schedules.length && <p>Загрузка расписания...</p>}
+      <div className="schedule-grid">
+        {/* Заголовок */}
+        <div className="cell header">Врач</div>
+        <div className="cell header">Кабинет</div>
+        {weekdays.map(w => (
+          <div key={w.value} className="cell header">{w.label}</div>
+        ))}
 
-      {Object.entries(grouped).map(([spec, docs]) => (
-        <table key={spec} className="schedule-table">
-          <thead>
-            <tr><th colSpan="8">{spec}</th></tr>
-            <tr>
-              <th>Врач</th><th>Кабинет</th>
-              {weekdays.map(w => <th key={w.value}>{w.label}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(docs).map(([docName, { cabinet, days }]) => (
-              <tr key={docName} onClick={() => onDoctorSelect?.(docName)}>
-                <td>{docName}</td>
-                <td>{cabinet}</td>
-                {weekdays.map(w =>
-                  <td key={w.value}>{days[w.value] || ""}</td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ))}
+        {/* Данные */}
+        {Object.entries(filteredMap).map(([docName, { cabinet, days }]) => (
+          <React.Fragment key={docName}>
+            <div className="cell">{docName}</div>
+            <div className="cell">{cabinet}</div>
 
-      {selectedSpecialty && filteredSchedules.length === 0 && (
-        <p>Нет доступного расписания по выбранным фильтрам.</p>
-      )}
+            {weekdays.map(w => {
+              const times = days[w.value];
+              return (
+                <div
+                  key={w.value}
+                  className={`cell timeslot ${times ? 'active' : 'inactive'}`}
+                  onClick={() => times && onTimeClick?.({
+                    doctor: docName,
+                    day: w.label,
+                    time: `${formatTime(times[0])}–${formatTime(times[1])}`
+                  })}
+                >
+                  {times ? `${formatTime(times[0])}–${formatTime(times[1])}` : ''}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 }

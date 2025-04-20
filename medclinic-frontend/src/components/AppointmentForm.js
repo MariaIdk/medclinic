@@ -11,7 +11,6 @@ export default function AppointmentForm({ patientId }) {
   const [selectedTime, setSelectedTime] = useState("");
   const [loadingServices, setLoadingServices] = useState(true);
 
-  // Получаем список направлений
   useEffect(() => {
     fetch("http://localhost:8000/api/specialties/")
       .then((res) => res.json())
@@ -26,7 +25,6 @@ export default function AppointmentForm({ patientId }) {
       });
   }, []);
 
-  // Подгружаем врачей по направлению
   useEffect(() => {
     if (!selectedService) return;
 
@@ -36,7 +34,6 @@ export default function AppointmentForm({ patientId }) {
       .catch(console.error);
   }, [selectedService]);
 
-  // Получаем доступные временные слоты
   useEffect(() => {
     if (!(selectedDoctor && selectedDate)) {
       setAvailableTimes([]);
@@ -114,37 +111,11 @@ export default function AppointmentForm({ patientId }) {
 
   return (
     <div className="section">
-      <h2>Запись к врачу</h2>
-
-      {/* 1. Расписание врачей */}
+      {/* Расписание врачей */}
       {!selectedService && <AppointmentSchedule />}
 
       <form onSubmit={handleSubmit} className="appointment-form">
-        {/* 2. Выбор направления */}
-        {loadingServices ? (
-          <p>Загрузка направлений...</p>
-        ) : (
-          <>
-            <label>Выберите направление:</label>
-            <select
-              value={selectedService?.id || ""}
-              onChange={(e) => {
-                const service = services.find((s) => s.id === +e.target.value);
-                setSelectedService(service || null);
-                setSelectedDoctor(null);
-                setSelectedDate("");
-                setAvailableTimes([]);
-              }}
-            >
-              <option value="">— выбрать —</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+        {/* 2. Выбор направления УДАЛЕНО */}
 
         {/* 3. Врач */}
         {selectedService && doctors.length > 0 && (

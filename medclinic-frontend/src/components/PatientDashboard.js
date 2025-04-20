@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import './PatientDashboard.css'; // Подключим стили
+import './PatientDashboard.css';
 
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
 import { getPatientDocuments } from '../api';
-// import AppointmentSchedule from './AppointmentSchedule';
 import AppointmentForm from './AppointmentForm';
-
+import MyAppointments from './MyAppointments';
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
   const [documents, setDocuments] = useState([]);
+  const [historySubsection, setHistorySubsection] = useState(null); // 👈 новое состояние
 
   const handleSectionClick = (section) => {
     setSelectedSection(section);
+    if (section !== 'history') {
+      setHistorySubsection(null); // сбрасываем подменю, если выбрана не история
+    }
   };
 
   useEffect(() => {
@@ -21,8 +24,6 @@ const PatientDashboard = ({ patientId }) => {
       getPatientDocuments(patientId).then(setDocuments);
     }
   }, [selectedSection, patientId]);
-
-
 
   return (
     <div className="dashboard">
@@ -56,22 +57,18 @@ const PatientDashboard = ({ patientId }) => {
         )}
 
         {selectedSection === 'appointments' && (
-          // <div className="section">
-          //   <h2>Запись к врачу</h2>
-          //   <p>Здесь будет форма для записи к врачу</p>
-          // </div>
           <AppointmentForm patientId={patientId} />
         )}
 
+
         {selectedSection === 'myRecords' && (
-          <div className="section">
-            <h2>Мои записи</h2>
-            <ul>
-              <li>Прием 1: 20.04.2025 - Доктор: Петров Петр Петрович - Причина: осмотр - Статус: Не отменен</li>
-              <li>Прием 2: 22.04.2025 - Доктор: Сидоров Сидор Сидорович - Причина: анализы - Статус: Отменен</li>
-            </ul>
-          </div>
+          <MyAppointments
+            patientId={patientId}
+            statusFilter={['scheduled', 'in_progress']}
+            sortAsc={true}
+          />
         )}
+
 
         {selectedSection === 'documents' && (
           <div className="section">
@@ -84,28 +81,27 @@ const PatientDashboard = ({ patientId }) => {
         {selectedSection === 'history' && (
           <div className="section">
             <h2>История</h2>
-            <button onClick={() => setSelectedSection('visitHistory')}>История посещений</button>
-            <button onClick={() => setSelectedSection('dischargeHistory')}>Выписки</button>
-          </div>
-        )}
+            <button onClick={() => setHistorySubsection('visitHistory')}>История посещений</button>
+            <button onClick={() => setHistorySubsection('dischargeHistory')}>Выписки</button>
 
-        {selectedSection === 'visitHistory' && (
-          <div className="section">
-            <h2>История посещений</h2>
-            <ul>
-              <li>Прием 1: 20.04.2025 - Доктор: Петров Петр Петрович - Причина: осмотр - Заключение: Все хорошо</li>
-              <li>Прием 2: 22.04.2025 - Доктор: Сидоров Сидор Сидорович - Причина: анализы - Заключение: нет</li>
-            </ul>
-          </div>
-        )}
 
-        {selectedSection === 'dischargeHistory' && (
-          <div className="section">
-            <h2>Выписки</h2>
-            <ul>
-              <li>Выписка 1: 20.04.2025 - Диагноз: Простуда</li>
-              <li>Выписка 2: 22.04.2025 - Диагноз: Пневмония</li>
-            </ul>
+            {historySubsection === 'visitHistory' && (
+              <MyAppointments
+                patientId={patientId}
+                statusFilter={['completed', 'cancelled', 'no_show']}
+              />
+            )}
+
+
+            {historySubsection === 'dischargeHistory' && (
+              <div className="section">
+                <h3>Выписки</h3>
+                <ul>
+                  <li>Выписка 1: 20.04.2025 - Диагноз: Простуда</li>
+                  <li>Выписка 2: 22.04.2025 - Диагноз: Пневмония</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

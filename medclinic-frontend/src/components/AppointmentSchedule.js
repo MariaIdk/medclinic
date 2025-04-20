@@ -67,7 +67,7 @@ export default function AppointmentSchedule({ patientId }) {
     setSelectedWeekday("");
   }, [schedules, selectedSpec]);
 
-  // Group schedules by doctor
+  // Group schedules by doctor with filters applied
   const scheduleMap = {};
   schedules.forEach(s => {
     if (selectedSpec && s.direction !== +selectedSpec) return;
@@ -123,15 +123,90 @@ export default function AppointmentSchedule({ patientId }) {
     setModalDate(formatDate(dateObj));
     setModalDuration(duration);
     setModalDirection(direction);
-    // slots generation and blocked fetch omitted for brevity...
+
+    const [start, end] = times;
+    let [h, m] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const slots = [];
+    while (h < endH || (h === endH && m < endM)) {
+      slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+      m += duration;
+      if (m >= 60) { h += Math.floor(m/60); m %= 60; }
+    }
+    setAvailableSlots(slots);
+
+    const iso = dateObj.toISOString().slice(0,10);
+    Promise.all([
+      fetch(`http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${iso}`).then(r=>r.json()),
+      fetch(`http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${iso}`).then(r=>r.json())
+    ]).then(([docApps, patApps]) => {
+      const timesDoc = docApps.map(a=>a.appointment_time.slice(0,5));
+      const timesPat = patApps.map(a=>a.appointment_time.slice(0,5));
+      setBlockedSlots([...new Set([...timesDoc, ...timesPat])]);
+    }).catch(console.error);
+
     setModalStep(1);
   };
 
-  // ... confirmAppointment and isPast as before
+  const confirmAppointment = () => {
+    const [d,m,y] = modalDate.split('.');
+    const payload = { 
+      patient: patientId, 
+      doctor: modalDoctorId, 
+      service: selectedService, 
+      appointment_date: `20${y}-${m}-${d}`, 
+      appointment_time: selectedSlot, 
+      reason 
+    };
+    fetch("http://localhost:8000/api/appointments/", {
+      method: 'POST', 
+      headers: {'Content-Type':'application/json'}, 
+      body: JSON.stringify(payload)
+    }).then(async res => { 
+      const data = await res.json(); 
+      if(!res.ok) { 
+        alert(data.detail||JSON.stringify(data)); 
+        throw ''; 
+      } 
+      alert('Запись прошла успешно'); 
+      closeModal(); 
+    }).catch(console.error);
+  };
+
+  const isPast = (slot) => {
+    if (!modalDateObj) return false;
+    const [h,m] = slot.split(':').map(Number);
+    const slotDate = new Date(modalDateObj);
+    slotDate.setHours(h, m, 0, 0);
+    return slotDate < new Date();
+  };
 
   return (
     <div className="schedule-wrapper">
-      {/* controls ... */}
+      <div className="schedule-controls">
+        <div className="week-selector">
+          <button onClick={()=>setWeekOffset(o=>Math.max(0,o-1))} disabled={weekOffset===0}>‹</button>
+          <span>Расписание с {formatDate(monday)} до {formatDate(sunday)}</span>
+          <button onClick={()=>setWeekOffset(o=>o+1)} disabled={weekOffset===5}>›</button>
+        </div>
+        <div className="filters">
+          <label>Направление:</label>
+          <select value={selectedSpec} onChange={e=>setSelectedSpec(e.target.value)}>
+            <option value="">Все</option>
+            {specialties.map(sp=><option key={sp.id} value={sp.id}>{sp.name}</option>)}
+          </select>
+          <label>Врач:</label>
+          <select value={selectedDoctor} onChange={e=>setSelectedDoctor(e.target.value)}>
+            <option value="">Все</option>
+            {doctors.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <label>День:</label>
+          <select value={selectedWeekday} onChange={e=>setSelectedWeekday(e.target.value)}>
+            <option value="">Все</option>
+            {weekdays.map(w=><option key={w.value} value={w.value}>{w.label}</option>)}
+          </select>
+        </div>
+      </div>
 
       <div className="schedule-grid">
         {Object.entries(bySpec).map(([specId, group]) => (
@@ -174,7 +249,29 @@ export default function AppointmentSchedule({ patientId }) {
         ))}
       </div>
 
-      {/* modal overlay ... */}
+      {modalStep>0 && <div className="modal-overlay"><div className="modal-window">
+        <button className="modal-close" onClick={closeModal}>×</button>
+        {modalStep===1 ? <>
+          <h3>{modalDoctorName}, {modalDate}</h3>
+          <div className="slots-list">
+            {availableSlots.map(s=><button key={s}
+                className={`slot-btn ${blockedSlots.includes(s)?'blocked':''} ${selectedSlot===s?'selected':''}`}
+                disabled={blockedSlots.includes(s) || isPast(s)}
+                onClick={()=>setSelectedSlot(s)}>{s}</button>)}
+          </div>
+          {selectedSlot && <button className="modal-next" onClick={()=>setModalStep(2)}>Выбрать время</button>}
+        </> : <>
+          <h3>{modalDoctorName}, {modalDate}, {selectedSlot}</h3>
+          <label>Услуга:</label>
+          <select value={selectedService} onChange={e=>setSelectedService(e.target.value)}>
+            <option value="">— выбрать —</option>
+            {services.filter(s=>s.direction===modalDirection).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <label>Причина обращения:</label>
+          <textarea value={reason} onChange={e=>setReason(e.target.value)}/>
+          {selectedService && reason && <button className="modal-confirm" onClick={confirmAppointment}>Записаться</button>}
+        </>}
+      </div></div>}
     </div>
   );
 }

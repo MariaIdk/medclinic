@@ -18,17 +18,30 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PatientDocumentSerializer(serializers.ModelSerializer):
-    # Здесь document_type переименован в description, если требуется, можно добавить дополнительные методы, если нужно
-    class Meta:
-        model = PatientDocument
-        fields = '__all__'
+# class PatientDocumentSerializer(serializers.ModelSerializer):
+#     # Здесь document_type переименован в description, если требуется, можно добавить дополнительные методы, если нужно
+#     class Meta:
+#         model = PatientDocument
+#         fields = '__all__'
+
+
+# class DoctorSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Doctor
+#         fields = '__all__'
 
 
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = '__all__'
+        fields = ['id', 'first_name', 'last_name', 'patronymic', 'specialty']
+
+class PatientDocumentSerializer(serializers.ModelSerializer):
+    uploaded_by_doctor = DoctorSerializer(read_only=True)
+
+    class Meta:
+        model = PatientDocument
+        fields = ['id', 'patient', 'description', 'document_file', 'created_at', 'uploaded_by', 'uploaded_by_doctor']
 
 
 class DoctorDocumentSerializer(serializers.ModelSerializer):
@@ -43,16 +56,6 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class ClinicScheduleSerializer(serializers.ModelSerializer):
-#     weekday_display = serializers.CharField(source='get_weekday_display', read_only=True)
-    
-#     class Meta:
-#         model = ClinicSchedule
-#         fields = '__all__'
-#         # Если хочется добавить отображение дня недели, например: 
-#         # fields = ['id', 'direction', 'doctor', 'cabinet', 'weekday', 'weekday_display', 'specific_date', 'start_time', 'end_time', 'appointment_duration']
-
-# serializers.py
 class ClinicScheduleSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.__str__', read_only=True)
     class Meta:

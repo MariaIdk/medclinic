@@ -3,9 +3,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils.dateparse import parse_date
 from openpyxl import load_workbook
-import datetime
 from django.http import JsonResponse
 from rest_framework import generics
+
+
+import os
+import mimetypes
+from django.utils.encoding import smart_str
+from django.http import FileResponse, Http404
+from rest_framework.decorators import action
+
 
 from rest_framework import viewsets
 from .models import (
@@ -39,20 +46,36 @@ class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
 
 
+# class PatientDocumentViewSet(viewsets.ModelViewSet):
+#     """
+#     API endpoint для операций с документами пациента.
+#     """
+#     queryset = PatientDocument.objects.all()
+#     serializer_class = PatientDocumentSerializer
+
+
 class PatientDocumentViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint для операций с документами пациента.
-    """
     queryset = PatientDocument.objects.all()
     serializer_class = PatientDocumentSerializer
 
+    @action(detail=True, methods=['get'], url_path='download')
+    def download(self, request, pk=None):
+        doc = self.get_object()
+        # Локальный путь
+        file_path = doc.document_file.path
+        if not os.path.exists(file_path):
+            raise Http404("Файл не найден")
 
-# class DoctorViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint для операций с врачами.
-#     """
-#     queryset = Doctor.objects.all()
-#     serializer_class = DoctorSerializer
+        # Определяем MIME‑тип
+        mime_type, _ = mimetypes.guess_type(file_path)
+        mime_type = mime_type or 'application/octet-stream'
+
+        # Открываем и отдаём как вложение
+        response = FileResponse(open(file_path, 'rb'), content_type=mime_type)
+        response['Content-Disposition'] = (
+            f'attachment; filename="{smart_str(os.path.basename(file_path))}"'
+        )
+        return response
 
 class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
@@ -74,26 +97,12 @@ class DoctorDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DoctorDocumentSerializer
 
 
-# class ServiceViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint для операций с услугами.
-#     """
-#     queryset = Service.objects.all()
-#     serializer_class = ServiceSerializer
-
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
     http_method_names = ['get']
 
-
-# class ClinicScheduleViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint для операций с расписанием клиники.
-#     """
-#     queryset = ClinicSchedule.objects.all()
-#     serializer_class = ClinicScheduleSerializer
 
 
 class ClinicScheduleViewSet(viewsets.ModelViewSet):

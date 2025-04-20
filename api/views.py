@@ -114,21 +114,28 @@ class ClinicScheduleViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-# class AppointmentViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint для операций с приёмами.
-#     Фильтрация по is_deleted=False исключает "мягко удалённые" записи.
-#     """
-#     queryset = Appointment.objects.filter(is_deleted=False)
-#     serializer_class = AppointmentSerializer
+
 
 class AppointmentViewSet(viewsets.ModelViewSet):
-    queryset = Appointment.objects.all()
+    """
+    API endpoint для операций с приёмами.
+    Поддерживает фильтрацию по врачу и дате приёма через query params.
+    """
     serializer_class = AppointmentSerializer
 
+    def get_queryset(self):
+        queryset = Appointment.objects.filter(is_deleted=False)
+        doctor_id = self.request.query_params.get('doctor')
+        appointment_date = self.request.query_params.get('appointment_date')
+        if doctor_id:
+            queryset = queryset.filter(doctor__id=doctor_id)
+        if appointment_date:
+            queryset = queryset.filter(appointment_date=appointment_date)
+        return queryset
+
     def perform_create(self, serializer):
-        # При необходимости — дополнительные проверки
         serializer.save()
+
 
 
 

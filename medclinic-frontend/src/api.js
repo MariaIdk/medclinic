@@ -7,13 +7,15 @@ const api = axios.create({
 });
 
 // Получение всех документов пациента
-export const getPatientDocuments = (patientId) => {
-  return api.get(`/patients/${patientId}/documents/`)
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error fetching patient documents:', error);
-      throw error;
-    });
+export const getPatientDocuments = async (patientId) => {
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/patient-documents/?patient=${patientId}`);
+    if (!res.ok) throw new Error('Ошибка при получении документов');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching patient documents:', error);
+    throw error;
+  }
 };
 
 // Добавление документа пациента
@@ -24,4 +26,16 @@ export const uploadPatientDocument = (patientId, documentData) => {
       console.error('Error uploading patient document:', error);
       throw error;
     });
+};
+
+// Удаление документа пациента по ID
+export const deletePatientDocument = async (documentId) => {
+  try {
+    const response = await axios.delete(`http://127.0.0.1:8000/api/patient-documents/${documentId}/`);
+    console.log('Документ удалён:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при удалении документа:', error);
+    throw error;
+  }
 };

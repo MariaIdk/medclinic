@@ -3,25 +3,39 @@ import './PatientDashboard.css';
 
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
-import { getPatientDocuments } from '../api';
+import { getPatientDocuments, uploadPatientDocument, deletePatientDocument } from '../api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
   const [documents, setDocuments] = useState([]);
-  const [historySubsection, setHistorySubsection] = useState(null); // 👈 новое состояние
+  const [historySubsection, setHistorySubsection] = useState(null);
 
   const handleSectionClick = (section) => {
     setSelectedSection(section);
     if (section !== 'history') {
-      setHistorySubsection(null); // сбрасываем подменю, если выбрана не история
+      setHistorySubsection(null);
+    }
+  };
+
+  const handleDelete = async (docId) => {
+    if (window.confirm('Точно удалить документ?')) {
+      try {
+        await deletePatientDocument(docId);
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+      } catch (error) {
+        alert('Не удалось удалить документ.');
+      }
     }
   };
 
   useEffect(() => {
     if (selectedSection === 'documents') {
-      getPatientDocuments(patientId).then(setDocuments);
+      getPatientDocuments(patientId).then((data) => {
+        console.log("Документы от API:", data);
+        setDocuments(data);
+      });
     }
   }, [selectedSection, patientId]);
 
@@ -60,7 +74,6 @@ const PatientDashboard = ({ patientId }) => {
           <AppointmentForm patientId={patientId} />
         )}
 
-
         {selectedSection === 'myRecords' && (
           <MyAppointments
             patientId={patientId}
@@ -69,11 +82,10 @@ const PatientDashboard = ({ patientId }) => {
           />
         )}
 
-
         {selectedSection === 'documents' && (
           <div className="section">
             <h2>Мои документы</h2>
-            <PatientDocumentList documents={documents} />
+            <PatientDocumentList documents={documents} onDelete={handleDelete} />
             <DocumentUpload patientId={patientId} />
           </div>
         )}
@@ -84,14 +96,12 @@ const PatientDashboard = ({ patientId }) => {
             <button onClick={() => setHistorySubsection('visitHistory')}>История посещений</button>
             <button onClick={() => setHistorySubsection('dischargeHistory')}>Выписки</button>
 
-
             {historySubsection === 'visitHistory' && (
               <MyAppointments
                 patientId={patientId}
                 statusFilter={['completed', 'cancelled', 'no_show']}
               />
             )}
-
 
             {historySubsection === 'dischargeHistory' && (
               <div className="section">

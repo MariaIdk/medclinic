@@ -56,7 +56,8 @@ export default function AppointmentForm({ patientId }) {
         const [endH, endM] = end_time.split(":").map(Number);
 
         while (h < endH || (h === endH && m < endM)) {
-          const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+          const t = `${String(h).padStart(2, "0")}:
+          ${String(m).padStart(2, "0")}`;
           times.push(t);
           m += appointment_duration;
           if (m >= 60) {
@@ -112,11 +113,9 @@ export default function AppointmentForm({ patientId }) {
   return (
     <div className="section">
       {/* Расписание врачей */}
-      {!selectedService && <AppointmentSchedule />}
+      {!selectedService && <AppointmentSchedule patientId={patientId} />}
 
       <form onSubmit={handleSubmit} className="appointment-form">
-        {/* 2. Выбор направления УДАЛЕНО */}
-
         {/* 3. Врач */}
         {selectedService && doctors.length > 0 && (
           <>

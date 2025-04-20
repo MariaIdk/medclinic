@@ -1,50 +1,159 @@
 /* src/components/AppointmentSchedule.css */
 
-.schedule-container {
-    width: 100%;
-    overflow-x: auto;
-    margin: 1rem 0;
+/* Основная обёртка */
+.schedule-wrapper {
+    position: relative;
+    padding: 1rem;
+    background: #fff;
   }
   
-  .schedule-header {
-    margin-bottom: 0.5rem;
+  /* Контейнер с селекторами */
+  .schedule-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
   
-  .schedule-header label {
-    margin-right: 0.5rem;
+  .week-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+  .week-selector button {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .week-selector button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   
+  .filters {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .filters label {
+    font-size: 0.9rem;
+  }
+  .filters select {
+    padding: 0.3rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* Сетка расписания */
   .schedule-grid {
     display: grid;
-    /* 2 столбца (врач, кабинет) + 6 дней недели */
     grid-template-columns: 2fr 1fr repeat(6, 1fr);
     border: 1px solid #ccc;
   }
-  
   .cell {
     border: 1px solid #ccc;
-    padding: 0.5rem;
-    box-sizing: border-box;
+    padding: 0.6rem;
     text-align: center;
     min-width: 80px;
+    box-sizing: border-box;
   }
-  
   .header {
-    background-color: #f7f7f7;
+    background-color: #f3f3f3;
     font-weight: bold;
   }
-  
-  .timeslot {
+  .grid-date {
+    font-size: 0.75rem;
+    color: #555;
+    margin-top: 0.25rem;
+  }
+  .timeslot.active {
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    background-color: #e8f7ff;
+    transition: background-color 0.2s;
   }
-  
   .timeslot.active:hover {
-    background-color: #e0f7fa;
+    background-color: #c0eaff;
   }
-  
   .timeslot.inactive {
     background-color: #fafafa;
-    color: #999;
+    color: #aaa;
+    cursor: default;
+  }
+  
+  /* Модальное окно */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal-window {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 420px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  .modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+  .slots-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .slot-btn {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+  }
+  .slot-btn.open:hover {
+    background-color: #def3ff;
+  }
+  .slot-btn.blocked {
+    background: #f3f3f3;
+    color: #888;
+    cursor: not-allowed;
+  }
+  .slot-btn.selected {
+    background-color: #a0d468;
+    color: #fff;
+  }  
+  .modal-next,
+  .modal-confirm {
+    margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    border: none;
+    background: #007bff;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .modal-next:disabled,
+  .modal-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   

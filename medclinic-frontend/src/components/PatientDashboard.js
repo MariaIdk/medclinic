@@ -1,16 +1,19 @@
+// src/components/PatientDashboard.js
 import React, { useState, useEffect } from 'react';
 import './PatientDashboard.css';
 
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
-import { getPatientDocuments, uploadPatientDocument, deletePatientDocument } from '../api';
+import { getPatientDocuments, deletePatientDocument } from '../api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
   const [documents, setDocuments] = useState([]);
+  const [docFilter, setDocFilter] = useState('all');
   const [historySubsection, setHistorySubsection] = useState(null);
+  const [historyDocs, setHistoryDocs] = useState([]);
 
   const handleSectionClick = (section) => {
     setSelectedSection(section);
@@ -33,11 +36,23 @@ const PatientDashboard = ({ patientId }) => {
   useEffect(() => {
     if (selectedSection === 'documents') {
       getPatientDocuments(patientId).then((data) => {
-        console.log("Документы от API:", data);
         setDocuments(data);
       });
     }
   }, [selectedSection, patientId]);
+
+  useEffect(() => {
+    if (selectedSection === 'history' && historySubsection === 'summaries') {
+      getPatientDocuments(patientId).then((data) => {
+        setHistoryDocs(data.filter(doc => doc.uploaded_by === 'doctor'));
+      });
+    }
+  }, [selectedSection, historySubsection, patientId]);
+
+  const filteredDocuments = documents.filter(doc => {
+    if (docFilter === 'all') return true;
+    return doc.uploaded_by === docFilter;
+  });
 
   return (
     <div className="dashboard">
@@ -59,14 +74,7 @@ const PatientDashboard = ({ patientId }) => {
       <div className="content">
         {selectedSection === 'personalInfo' && (
           <div className="section">
-            <h2>Личная информация</h2>
-            <ul>
-              <li>ФИО: Иванов Иван Иванович</li>
-              <li>Телефон: +7 900 123 45 67</li>
-              <li>Почта: ivanov@example.com</li>
-              <li><button>Редактировать информацию</button></li>
-              <li><button className="danger">Удалить учетную запись</button></li>
-            </ul>
+            {/* Личная информация */}
           </div>
         )}
 
@@ -85,7 +93,23 @@ const PatientDashboard = ({ patientId }) => {
         {selectedSection === 'documents' && (
           <div className="section">
             <h2>Мои документы</h2>
-            <PatientDocumentList documents={documents} onDelete={handleDelete} />
+
+            <div className="document-filter">
+              <label>Показать: </label>
+              <select
+                value={docFilter}
+                onChange={e => setDocFilter(e.target.value)}
+              >
+                <option value="all">Все</option>
+                <option value="patient">Добавленные мной</option>
+                <option value="doctor">Добавленные врачом</option>
+              </select>
+            </div>
+
+            <PatientDocumentList
+              documents={filteredDocuments}
+              onDelete={handleDelete}
+            />
             <DocumentUpload patientId={patientId} />
           </div>
         )}
@@ -93,23 +117,27 @@ const PatientDashboard = ({ patientId }) => {
         {selectedSection === 'history' && (
           <div className="section">
             <h2>История</h2>
-            <button onClick={() => setHistorySubsection('visitHistory')}>История посещений</button>
-            <button onClick={() => setHistorySubsection('dischargeHistory')}>Выписки</button>
+            <div className="history-buttons">
+              <button onClick={() => setHistorySubsection('appointments')}>История посещений</button>
+              <button onClick={() => setHistorySubsection('summaries')}>Выписки</button>
+            </div>
 
-            {historySubsection === 'visitHistory' && (
+            {historySubsection === 'appointments' && (
               <MyAppointments
                 patientId={patientId}
-                statusFilter={['completed', 'cancelled', 'no_show']}
+                statusFilter={['completed']}
+                sortAsc={false}
+                showDocsWithActions={true}
               />
             )}
 
-            {historySubsection === 'dischargeHistory' && (
-              <div className="section">
-                <h3>Выписки</h3>
-                <ul>
-                  <li>Выписка 1: 20.04.2025 - Диагноз: Простуда</li>
-                  <li>Выписка 2: 22.04.2025 - Диагноз: Пневмония</li>
-                </ul>
+            {historySubsection === 'summaries' && (
+              <div>
+                <h3>Документы, добавленные врачом</h3>
+                <PatientDocumentList
+                  documents={historyDocs}
+                  onDelete={null}
+                />
               </div>
             )}
           </div>
@@ -117,10 +145,7 @@ const PatientDashboard = ({ patientId }) => {
 
         {selectedSection === 'logout' && (
           <div className="section">
-            <h2>Выход</h2>
-            <p>Вы действительно хотите выйти?</p>
-            <button>Да</button>
-            <button>Нет</button>
+            {/* Логика выхода, если нужна */}
           </div>
         )}
       </div>

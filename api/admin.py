@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 
+
 admin.site.register(Patient)
 admin.site.register(PatientDocument)
 admin.site.register(Doctor)
@@ -22,6 +23,9 @@ admin.site.register(Service)
 # admin.site.register(ClinicSchedule)
 admin.site.register(License)
 admin.site.register(Specialty)
+
+
+
 
 
 
@@ -70,3 +74,4 @@ class ClinicScheduleForm(forms.ModelForm):
 @admin.register(ClinicSchedule)
 class ClinicScheduleAdmin(admin.ModelAdmin):
     form = ClinicScheduleForm
+

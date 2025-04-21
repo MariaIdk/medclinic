@@ -42,6 +42,10 @@ INSTALLED_APPS = [
     'api',
     'corsheaders',
     'django_filters',
+
+
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -136,8 +140,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Ваш фронтенд
 ]
 
+
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.rest_framework.DjangoFilterBackend'
-    ]
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }

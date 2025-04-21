@@ -12,6 +12,7 @@ from .views import (
     ScheduleUploadView,
 )
 from . import views
+from api.views_auth import RegisterView
 
 router = DefaultRouter()
 router.register(r'patients', PatientViewSet, basename='patient')
@@ -32,4 +33,5 @@ urlpatterns += [
     path('ajax/get-doctors/', views.get_doctors_by_specialty, name='get_doctors_by_specialty'),
     path('specialties/', views.SpecialtyList.as_view(), name='specialties'),
     path('clinic-schedules/', views.ClinicScheduleList.as_view(), name='clinic-schedules'),
+    path('register/', RegisterView.as_view(), name='register'),
 ]

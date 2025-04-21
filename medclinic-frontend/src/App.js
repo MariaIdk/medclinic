@@ -1,18 +1,43 @@
 // src/App.js
+import React, { useContext } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthContext } from './contexts/AuthContext';
 
-import React from 'react';
+import RegistrationForm from './components/RegistrationForm';
+import LoginForm from './components/LoginForm';
 import PatientDashboard from './components/PatientDashboard';
+// import HomePage from './components/HomePage'; // либо создайте этот компонент
 
+function PrivateRoute({ children }) {
+  const { accessToken } = useContext(AuthContext);
+  return accessToken ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
-    // Для примера используем жестко закодированный ID пациента
-    const patientId = 1;
+  // Читаем userId из контекста, а не из localStorage напрямую
+  const { userId } = useContext(AuthContext);
 
-    return (
-        <div className="App">
-            <PatientDashboard patientId={patientId} />
-        </div>
-    );
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/register" element={<RegistrationForm />} />
+        <Route path="/login" element={<LoginForm />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <PatientDashboard patientId={userId} />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Если у вас есть домашняя страница */}
+        <Route path="/" element={<div>HomePage</div>} />
+        {/* либо: <Route path="/" element={<HomePage />} /> */}
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;

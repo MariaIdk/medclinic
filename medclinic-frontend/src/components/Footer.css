@@ -1,0 +1,7 @@
+.footer {
+    background: #f3f3f3;
+    padding: 1rem;
+    text-align: center;
+    /* прижать к низу, если контента мало */
+    margin-top: auto;
+  }

@@ -1,0 +1,13 @@
+import React from 'react';
+import './Footer.css';
+
+export default function Footer() {
+  return (
+    <footer className="footer">
+      <div>© 2025 MedClinic</div>
+      <div>Адрес: г. Москва, ул. Примерная, д.1</div>
+      <div>Телефон: +7 (495) 123-45-67</div>
+      <div>Email: info@medclinic.ru</div>
+    </footer>
+  );
+}

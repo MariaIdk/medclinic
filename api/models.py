@@ -2,10 +2,17 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
-
+from django.contrib.auth.models import User
 
 
 class Patient(models.Model):
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='patient_profile'
+    )
+
+
+     
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     patronymic = models.CharField(max_length=100, blank=True, null=True)

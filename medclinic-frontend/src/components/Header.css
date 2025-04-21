@@ -1,0 +1,57 @@
+.header {
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    outline: none; /* чтобы onBlur работал */
+  }
+  .header__top {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+  }
+  .header__logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  .header__auth-btn {
+    background: none;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  .header__auth-menu {
+    position: absolute;
+    right: 2rem;
+    top: 100%;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 4px;
+  }
+  .header__auth-menu a {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #333;
+  }
+  .header__auth-menu a:hover {
+    background: #f0f0f0;
+  }
+  .header__nav {
+    display: flex;
+    justify-content: center;
+    background: #f7f7f7;
+    padding: 0.5rem;
+  }
+  .header__nav a {
+    margin: 0 1rem;
+    text-decoration: none;
+    color: #333;
+  }
+  .header__nav .active {
+    font-weight: bold;
+  }
+  

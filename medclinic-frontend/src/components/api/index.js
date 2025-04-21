@@ -50,22 +50,50 @@ export const getPatientDocuments = async (patientId) => {
   }
 };
 
-export const registerUser = async ({ username, password, firstName, lastName }) => {
+
+export const registerUser = async ({
+  username,
+  password,
+  firstName,
+  lastName,
+  patronymic,
+  dateOfBirth,
+  email,
+  phoneNumber,
+  address
+}) => {
   try {
+    const body = {
+      username,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+      patronymic: patronymic || '',
+      date_of_birth: dateOfBirth,     // 👈 snake_case!
+      email,
+      phone_number: phoneNumber,      // 👈 snake_case!
+      address
+    };
+
     const res = await fetch('http://localhost:8000/api/register/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, first_name: firstName, last_name: lastName }),
+      body: JSON.stringify(body),
     });
+
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.username || errorData.password || 'Ошибка регистрации');
+      // Выведем все ошибки сразу
+      const allErrors = Object.values(errorData).flat().join(' ');
+      throw new Error(allErrors || 'Ошибка регистрации');
     }
+
     return await res.json();
   } catch (err) {
     throw err;
   }
 };
+
 
 export const loginUser = async ({ username, password }) => {
   try {

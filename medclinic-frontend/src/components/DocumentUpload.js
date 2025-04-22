@@ -1,76 +1,71 @@
-// DocumentUpload.js
-import React, { useState } from 'react';
-import axios from 'axios';
+// src/components/DocumentUpload.js
+import React, { useState, useContext } from 'react';
+import { uploadPatientDocument } from './api';             // ← импортируем нашу обёртку
+import { AuthContext } from '../contexts/AuthContext';
 
-const DocumentUpload = ({ patientId }) => {
-  const [document, setDocument] = useState(null);
-  const [description, setDescription] = useState('');
+export default function DocumentUpload({ patientId, onUpload }) {
+  const { accessToken } = useContext(AuthContext);
+  const [file, setFile] = useState(null);
+  const [description, setDescription] = useState('');     // новое поле описания
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (event) => {
-    setDocument(event.target.files[0]);
+  const handleFileChange = e => {
+    setFile(e.target.files[0]);
   };
 
-  const handleDescriptionChange = (event) => {
-    setDescription(event.target.value);
+  const handleDescriptionChange = e => {
+    setDescription(e.target.value);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!document || !description.trim()) {
-      setError('Пожалуйста, укажите файл и описание документа.');
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!file || !description) {
+      setError('Выберите файл и введите описание');
       return;
     }
     setError('');
-
-    const formData = new FormData();
-    formData.append('document_file', document);
-    formData.append('patient', patientId);
-    formData.append('description', description.trim());
-    formData.append('uploaded_by', 'patient');
-
     setLoading(true);
+
     try {
-      await axios.post('http://localhost:8000/api/patient-documents/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      await uploadPatientDocument({
+        patientId,
+        file,
+        description
       });
-      alert('Документ успешно загружен');
-      setDocument(null);
+      // после успешной загрузки сбрасываем форму
+      setFile(null);
       setDescription('');
+      // если нужно обновить список в родительском компоненте
+      if (onUpload) onUpload();
     } catch (err) {
       console.error(err);
-      setError('Ошибка при загрузке документа. Попробуйте снова.');
+      setError(err.message || 'Не удалось загрузить документ');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="document-upload">
       <h2>Загрузить документ</h2>
+      {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Описание документа<span style={{color:'red'}}> *</span>:</label>
-          <input
-            type="text"
-            value={description}
-            onChange={handleDescriptionChange}
-            placeholder="Введите описание"
-            required
-          />
-        </div>
-        <div>
-          <label>Файл<span style={{color:'red'}}> *</span>:</label>
-          <input type="file" onChange={handleFileChange} required />
-        </div>
+        <label>Описание документа:</label>
+        <input
+          type="text"
+          value={description}
+          onChange={handleDescriptionChange}
+          required
+        />
+
+        <label>Файл:</label>
+        <input type="file" onChange={handleFileChange} required />
+
         <button type="submit" disabled={loading}>
           {loading ? 'Загрузка...' : 'Загрузить'}
         </button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
-};
-
-export default DocumentUpload;
+}

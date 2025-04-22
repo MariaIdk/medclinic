@@ -4,7 +4,8 @@ import './PatientDashboard.css';
 
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
-import { getPatientDocuments, deletePatientDocument } from '../api';
+// import { getPatientDocuments, deletePatientDocument } from '../api';
+import { getPatientDocuments, uploadPatientDocument, deletePatientDocument } from './api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
 
@@ -110,7 +111,15 @@ const PatientDashboard = ({ patientId }) => {
               documents={filteredDocuments}
               onDelete={handleDelete}
             />
-            <DocumentUpload patientId={patientId} />
+            {/* <DocumentUpload patientId={patientId} /> */}
+
+            <DocumentUpload
+              patientId={patientId}
+              onUpload={() => {
+                // повторно запросить и обновить список
+                getPatientDocuments(patientId).then(setDocuments);
+              }}
+            />
           </div>
         )}
 

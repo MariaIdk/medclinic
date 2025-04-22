@@ -14,7 +14,9 @@ from django.http import FileResponse, Http404
 from rest_framework.decorators import action
 
 
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
+from rest_framework.permissions import AllowAny
+
 from .models import (
     Patient,
     PatientDocument,
@@ -24,7 +26,8 @@ from .models import (
     ClinicSchedule,
     Appointment,
     License,
-    Specialty
+    Specialty, 
+    User
 )
 from .serializers import (
     PatientSerializer,
@@ -35,25 +38,13 @@ from .serializers import (
     ClinicScheduleSerializer,
     AppointmentSerializer,
     LicenseSerializer,
-    SpecialtySerializer
+    SpecialtySerializer,
+    UserSerializer
 )
 
 
-from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
-from rest_framework.serializers import ModelSerializer
 
-class UserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'password']
-        extra_kwargs = {'password': {'write_only': True}}
 
-    def create(self, validated_data):
-        user = User(username=validated_data['username'])
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -70,31 +61,38 @@ class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
 
 
-# class PatientDocumentViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint для операций с документами пациента.
-#     """
-#     queryset = PatientDocument.objects.all()
-#     serializer_class = PatientDocumentSerializer
-
 
 class PatientDocumentViewSet(viewsets.ModelViewSet):
-    queryset = PatientDocument.objects.all()
+    """
+    API endpoint для операций с документами пациента.
+    Фильтруем по текущему пациенту или по ?patient=...
+    """
     serializer_class = PatientDocumentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = PatientDocument.objects.all()
+
+        patient_id = self.request.query_params.get('patient')
+        if patient_id:
+            qs = qs.filter(patient__id=patient_id)
+        else:
+            user = self.request.user
+            if hasattr(user, 'patient_profile'):
+                qs = qs.filter(patient=user.patient_profile)
+
+        return qs
 
     @action(detail=True, methods=['get'], url_path='download')
     def download(self, request, pk=None):
         doc = self.get_object()
-        # Локальный путь
         file_path = doc.document_file.path
         if not os.path.exists(file_path):
             raise Http404("Файл не найден")
 
-        # Определяем MIME‑тип
         mime_type, _ = mimetypes.guess_type(file_path)
         mime_type = mime_type or 'application/octet-stream'
 
-        # Открываем и отдаём как вложение
         response = FileResponse(open(file_path, 'rb'), content_type=mime_type)
         response['Content-Disposition'] = (
             f'attachment; filename="{smart_str(os.path.basename(file_path))}"'
@@ -152,22 +150,39 @@ class ClinicScheduleViewSet(viewsets.ModelViewSet):
 class AppointmentViewSet(viewsets.ModelViewSet):
     """
     API endpoint для операций с приёмами.
-    Поддерживает фильтрацию по врачу и дате приёма через query params.
+    Теперь фильтруем по текущему пациенту или по ?patient=...
     """
     serializer_class = AppointmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Appointment.objects.filter(is_deleted=False)
+        qs = Appointment.objects.filter(is_deleted=False)
+
+        # 1) Фильтрация по patient query param
+        patient_id = self.request.query_params.get('patient')
+        if patient_id:
+            qs = qs.filter(patient__id=patient_id)
+        else:
+            # 2) Если не передали query param, возьмём профиль текущего пользователя
+            user = self.request.user
+            if hasattr(user, 'patient_profile'):
+                qs = qs.filter(patient=user.patient_profile)
+            # иначе (врач/админ) — оставляем весь список
+
+        # 3) Сохраняем старую логику фильтрации по врачу и дате
         doctor_id = self.request.query_params.get('doctor')
-        appointment_date = self.request.query_params.get('appointment_date')
         if doctor_id:
-            queryset = queryset.filter(doctor__id=doctor_id)
+            qs = qs.filter(doctor__id=doctor_id)
+
+        appointment_date = self.request.query_params.get('appointment_date')
         if appointment_date:
-            queryset = queryset.filter(appointment_date=appointment_date)
-        return queryset
+            qs = qs.filter(appointment_date=appointment_date)
+
+        return qs
 
     def perform_create(self, serializer):
         serializer.save()
+
 
 
 

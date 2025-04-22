@@ -1,17 +1,21 @@
 // src/components/PrivateRoute.js
 import React, { useContext } from 'react';
-import { Route, Redirect } from 'react-router-dom';
+import { Route, Navigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 
-export default function PrivateRoute({ component: Component, ...rest }) {
+// Защищённый маршрут для React Router v6
+export default function PrivateRoute({ element: Component, ...rest }) {
   const { accessToken } = useContext(AuthContext);
+
   return (
     <Route
       {...rest}
-      render={props =>
-        accessToken
-          ? <Component {...props} />
-          : <Redirect to="/login" />
+      element={
+        accessToken ? (
+          Component // Если токен есть, рендерим компонент
+        ) : (
+          <Navigate to="/login" /> // Если токена нет, перенаправляем на страницу входа
+        )
       }
     />
   );

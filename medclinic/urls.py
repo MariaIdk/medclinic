@@ -25,7 +25,6 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-
 def home(request):
     return HttpResponse("Добро пожаловать на главную страницу!")
 

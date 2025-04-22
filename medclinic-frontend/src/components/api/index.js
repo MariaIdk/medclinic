@@ -4,21 +4,21 @@
 // Универсальный fetch с подстановкой JWT и авто-рефрешем
 // —————————————————————————————————————————————————————————
 export async function authFetch(url, opts = {}) {
-  // берём токен из localStorage
-  let token = localStorage.getItem('accessToken');
+  const access = localStorage.getItem('accessToken');
+  const refresh = localStorage.getItem('refreshToken');
 
-  // первый запрос с текущим токеном
-  let res = await fetch(url, {
-    ...opts,
-    headers: {
-      ...(opts.headers || {}),
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+  const buildHeaders = (token) => ({
+    'Content-Type': 'application/json',
+    ...(opts.headers || {}),
+    Authorization: token ? `Bearer ${token}` : '',
   });
 
-  // если 401 — пробуем обновить
-  if (res.status === 401) {
-    const refresh = localStorage.getItem('refreshToken');
+  let res = await fetch(url, {
+    ...opts,
+    headers: buildHeaders(access),
+  });
+
+  if (res.status === 401 && refresh) {
     const refreshRes = await fetch('http://localhost:8000/api/token/refresh/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,23 +26,24 @@ export async function authFetch(url, opts = {}) {
     });
 
     if (refreshRes.ok) {
-      const { access } = await refreshRes.json();
-      localStorage.setItem('accessToken', access);
-      token = access;
+      const { access: newAccess } = await refreshRes.json();
+      localStorage.setItem('accessToken', newAccess);
 
-      // повторяем исходный запрос с новым токеном
       res = await fetch(url, {
         ...opts,
-        headers: {
-          ...(opts.headers || {}),
-          Authorization: `Bearer ${access}`,
-        },
+        headers: buildHeaders(newAccess),
       });
+    } else {
+      // refresh token недействителен — возможно, нужно разлогинить пользователя
+      console.warn('Не удалось обновить токен. Пользователь должен авторизоваться заново.');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
     }
   }
 
   return res;
 }
+
 
 // —————————————————————————————————————————————————————————
 // Получить документы пациента (только свои)

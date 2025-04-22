@@ -135,7 +135,7 @@ const PatientDashboard = ({ patientId }) => {
             {historySubsection === 'appointments' && (
               <MyAppointments
                 patientId={patientId}
-                statusFilter={['completed']}
+                statusFilter={['completed', 'cancelled', 'no_show']}
                 sortAsc={false}
                 showDocsWithActions={true}
               />

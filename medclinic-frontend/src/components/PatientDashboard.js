@@ -8,6 +8,7 @@ import DocumentUpload from './DocumentUpload';
 import { getPatientDocuments, uploadPatientDocument, deletePatientDocument } from './api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
+import PersonalInfo from './PersonalInfo';
 
 const PatientDashboard = ({ patientId }) => {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
@@ -75,7 +76,7 @@ const PatientDashboard = ({ patientId }) => {
       <div className="content">
         {selectedSection === 'personalInfo' && (
           <div className="section">
-            {/* Личная информация */}
+            <PersonalInfo patientId={patientId} />
           </div>
         )}
 

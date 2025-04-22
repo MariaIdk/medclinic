@@ -1,10 +1,10 @@
 // src/components/PatientDashboard.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './PatientDashboard.css';
 
 import PatientDocumentList from './PatientDocumentList';
 import DocumentUpload from './DocumentUpload';
-// import { getPatientDocuments, deletePatientDocument } from '../api';
 import { getPatientDocuments, uploadPatientDocument, deletePatientDocument } from './api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
@@ -16,12 +16,25 @@ const PatientDashboard = ({ patientId }) => {
   const [docFilter, setDocFilter] = useState('all');
   const [historySubsection, setHistorySubsection] = useState(null);
   const [historyDocs, setHistoryDocs] = useState([]);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSectionClick = (section) => {
-    setSelectedSection(section);
-    if (section !== 'history') {
-      setHistorySubsection(null);
+    if (section === 'logout') {
+      setShowLogoutConfirm(true);
+    } else {
+      setSelectedSection(section);
+      if (section !== 'history') {
+        setHistorySubsection(null);
+      }
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/');
   };
 
   const handleDelete = async (docId) => {
@@ -59,6 +72,9 @@ const PatientDashboard = ({ patientId }) => {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
+        <div className="back-to-home" onClick={() => navigate('/')}>
+          ← Вернуться на главную страницу
+        </div>
         <h1>Личный кабинет</h1>
       </header>
 
@@ -112,12 +128,10 @@ const PatientDashboard = ({ patientId }) => {
               documents={filteredDocuments}
               onDelete={handleDelete}
             />
-            {/* <DocumentUpload patientId={patientId} /> */}
 
             <DocumentUpload
               patientId={patientId}
               onUpload={() => {
-                // повторно запросить и обновить список
                 getPatientDocuments(patientId).then(setDocuments);
               }}
             />
@@ -152,13 +166,20 @@ const PatientDashboard = ({ patientId }) => {
             )}
           </div>
         )}
-
-        {selectedSection === 'logout' && (
-          <div className="section">
-            {/* Логика выхода, если нужна */}
-          </div>
-        )}
       </div>
+
+      {/* Модальное окно подтверждения выхода */}
+      {showLogoutConfirm && (
+        <div className="logout-modal-overlay">
+          <div className="logout-modal">
+            <p>Выйти из личного кабинета?</p>
+            <div className="logout-buttons">
+              <button onClick={handleLogout}>Да</button>
+              <button onClick={() => setShowLogoutConfirm(false)}>Нет</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

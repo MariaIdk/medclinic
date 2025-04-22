@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 
 export default function HomePage() {
   const [showAuthOptions, setShowAuthOptions] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
   const handleRegisterClick = () => navigate('/register');
   const handleLoginClick = () => navigate('/login');
+  const handleDashboardClick = () => navigate('/dashboard');
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    setIsLoggedIn(!!token);
+  }, []);
 
   return (
     <>
@@ -15,9 +22,13 @@ export default function HomePage() {
         <div className="header-top">
           <div className="header-logo">MedClinic</div>
           <div className="header-auth">
-            <button onClick={() => setShowAuthOptions(!showAuthOptions)}>
-              Регистрация / Вход
-            </button>
+            {isLoggedIn ? (
+              <button onClick={handleDashboardClick}>Личный кабинет</button>
+            ) : (
+              <button onClick={() => setShowAuthOptions(!showAuthOptions)}>
+                Регистрация / Вход
+              </button>
+            )}
           </div>
         </div>
         <nav className="header-nav">
@@ -27,7 +38,7 @@ export default function HomePage() {
         </nav>
       </header>
 
-      {showAuthOptions && (
+      {showAuthOptions && !isLoggedIn && (
         <div className="auth-popup">
           <button onClick={handleRegisterClick}>Зарегистрироваться</button>
           <button onClick={handleLoginClick}>Войти</button>

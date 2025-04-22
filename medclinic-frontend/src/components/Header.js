@@ -1,34 +1,62 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+// src/components/Header.js
+import React, { useState, useContext, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
 import './Header.css';
 
 export default function Header() {
+  const { accessToken } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const btnRef = useRef();
+  const menuRef = useRef();
 
-  // закрыть меню при клике вне
-  const handleBlur = () => setOpen(false);
+  useEffect(() => {
+    const handler = e => {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(e.target) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
-    <header className="header" onBlur={handleBlur} tabIndex={0}>
+    <header className="header">
       <div className="header__top">
-        <div className="header__logo">MedClinic</div>
-        <button
-          className="header__auth-btn"
-          onClick={() => setOpen(!open)}
-        >
-          Регистрация&nbsp;/&nbsp;Вход
-        </button>
-        {open && (
-          <div className="header__auth-menu" onClick={e => e.stopPropagation()}>
-            <Link to="/register">Зарегистрироваться</Link>
-            <Link to="/login">Войти</Link>
-          </div>
-        )}
+        <div className="header__logo">
+          <NavLink to="/" end>MedClinic</NavLink>
+        </div>
+        <div className="header__auth">
+          {accessToken ? (
+            <button onClick={() => navigate('/dashboard')}>
+              Личный кабинет
+            </button>
+          ) : (
+            <>
+              <button ref={btnRef} className="header__auth-btn" onClick={() => setOpen(o => !o)}>
+                Регистрация&nbsp;/&nbsp;Вход
+              </button>
+              {open && (
+                <div ref={menuRef} className="header__auth-menu">
+                  <NavLink to="/register">Зарегистрироваться</NavLink>
+                  <NavLink to="/login">Войти</NavLink>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
+
       <nav className="header__nav">
-        <Link to="/" className="active">Главная</Link>
-        <Link to="/licenses">Лицензии</Link>
-        <Link to="/schedule">Расписание</Link>
+        <NavLink to="/"       end       className={({ isActive }) => isActive ? 'active' : ''}>Главная</NavLink>
+        <NavLink to="/licenses"         className={({ isActive }) => isActive ? 'active' : ''}>Лицензии</NavLink>
+        <NavLink to="/schedule"         className={({ isActive }) => isActive ? 'active' : ''}>Расписание</NavLink>
       </nav>
     </header>
   );

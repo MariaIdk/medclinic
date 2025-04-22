@@ -5,6 +5,8 @@ import RegistrationForm from './components/RegistrationForm';
 import LoginForm from './components/LoginForm';
 import PatientDashboard from './components/PatientDashboard';
 import HomePage from './components/HomePage';
+import SchedulePage from "./components/SchedulePage";  // Импортируем компонент SchedulePage
+import LicensePage from './components/LicensePage';
 
 function PrivateRoute({ children }) {
   const { accessToken } = useContext(AuthContext);
@@ -37,6 +39,10 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/schedule" element={<SchedulePage />} />  {/* Новый маршрут для расписания */}
+        
+        <Route path="/licenses" element={<LicensePage />} />
+        
         {/* Дополнительные страницы, например, лицензии и расписание */}
       </Routes>
     </BrowserRouter>

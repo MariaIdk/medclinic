@@ -1,12 +1,15 @@
-/* HomePage.css */
-.homepage {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-  
-  .homepage__content {
-    flex: 1;
-    padding: 2rem;
-  }
-  
+/* src/components/HomePage/HomePage.css */
+.auth-popup {
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+:root {
+  --primary-color: #0d6efd; 
+}

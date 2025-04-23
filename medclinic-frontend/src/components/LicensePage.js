@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './LicensePage.css';
 
 export default function LicensePage() {
   const [licenses, setLicenses] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function fetchLicenses() {
@@ -16,42 +18,56 @@ export default function LicensePage() {
         setLicenses(data);
       } catch (err) {
         console.error('Не удалось загрузить лицензии:', err);
+        setError('Не удалось загрузить лицензии. Пожалуйста, попробуйте позже.');
       }
     }
     fetchLicenses();
   }, []);
 
   return (
-    <>
+    <div className="d-flex flex-column min-vh-100">
       <Header />
-      <main className="license-page">
-        <h1>Лицензии клиники</h1>
-        <ul className="license-list">
+
+      <main className="container my-5">
+        <h1 className="text-center mb-4">Лицензии клиники</h1>
+
+        {error && (
+          <div className="alert alert-danger text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="d-flex flex-column align-items-center gap-4">
           {licenses.map(lic => (
-            <li key={lic.id}>
-              <strong>{lic.description}</strong>
-              {/* Если это изображение, покажем его */}
-              {lic.license_file_url?.match(/\.(png|jpe?g|gif)$/i) ? (
-                <img
-                  src={lic.license_file_url}
-                  alt={lic.description}
-                  className="license-image"
-                />
-              ) : (
-                // иначе просто ссылка на файл
-                <a
-                  href={lic.license_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Открыть файл
-                </a>
-              )}
-            </li>
+            <div key={lic.id} className="card license-card">
+              <div className="card-body text-center">
+                <h5 className="card-title mb-3">{lic.description}</h5>
+
+                {lic.license_file_url?.match(/\.(png|jpe?g|gif)$/i) ? (
+                  <div className="license-image-wrapper mx-auto">
+                    <img
+                      src={lic.license_file_url}
+                      alt={lic.description}
+                      className="license-image"
+                    />
+                  </div>
+                ) : (
+                  <a
+                    href={lic.license_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline-primary"
+                  >
+                    Открыть документ
+                  </a>
+                )}
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </main>
+
       <Footer />
-    </>
+    </div>
   );
 }

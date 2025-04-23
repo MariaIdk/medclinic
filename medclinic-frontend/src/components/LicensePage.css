@@ -1,39 +1,26 @@
-/* src/components/LicensePage.css */
 
-.license-page {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .license-list {
-    list-style: none;
-    padding: 0;
-  }
-  
-  .license-item {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  
-  .license-item strong {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-  
-  .license-item a {
-    color: #007bff;
-    text-decoration: none;
-  }
-  
-  .license-item a:hover {
-    text-decoration: underline;
-  }
-  
-  .error {
-    color: red;
-    margin-bottom: 1rem;
-  }
-  
+
+.license-card {
+  width: 100%;
+  max-width: 600px;      
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+/* Обёртка под изображение с A4-отношением сторон ~1:1.414 */
+.license-image-wrapper {
+  width: 100%;
+  padding-bottom: 141.4%;  /* высота = 1.414 × ширина */
+  position: relative;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.license-image {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

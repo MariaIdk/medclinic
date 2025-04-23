@@ -1,41 +1,48 @@
+// api.js
 import axios from 'axios';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
-// Получение всех документов пациента
+// Добавляем интерцептор для авторизации
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Получение документов пациента
 export const getPatientDocuments = async (patientId) => {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/patient-documents/?patient=${patientId}`);
-    if (!res.ok) throw new Error('Ошибка при получении документов');
-    return await res.json();
+    const response = await api.get(`/patient-documents/?patient=${patientId}`);
+    return response.data;
   } catch (error) {
     console.error('Error fetching patient documents:', error);
-    throw error;
+    throw new Error(error.response?.data?.detail || 'Ошибка при получении документов');
   }
-};
-
-// Добавление документа пациента
-export const uploadPatientDocument = (patientId, documentData) => {
-  return api.post(`/patients/${patientId}/upload_document/`, documentData)
-    .then(response => response.data)
-    .catch(error => {
-      console.error('Error uploading patient document:', error);
-      throw error;
-    });
 };
 
 // Удаление документа пациента по ID
 export const deletePatientDocument = async (documentId) => {
   try {
-    const response = await axios.delete(`http://127.0.0.1:8000/api/patient-documents/${documentId}/`);
+    // Используем созданный экземпляр api вместо чистого axios
+    const response = await api.delete(`/patient-documents/${documentId}/`);
     console.log('Документ удалён:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Ошибка при удалении документа:', error);
-    throw error;
+    console.error('Ошибка при удалении документа:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+    throw new Error(error.response?.data?.detail || 'Ошибка при удалении документа');
   }
 };

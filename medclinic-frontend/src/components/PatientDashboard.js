@@ -13,6 +13,7 @@ export default function PatientDashboard({ patientId }) {
   const [selectedSection, setSelectedSection] = useState('personalInfo');
   const [documents, setDocuments] = useState([]);
   const [docFilter, setDocFilter] = useState('all');
+  const [documentsError, setDocumentsError] = useState(null);
   const [historySubsection, setHistorySubsection] = useState(null);
   const [historyDocs, setHistoryDocs] = useState([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -29,12 +30,29 @@ export default function PatientDashboard({ patientId }) {
   };
 
   // Мои документы
+  // useEffect(() => {
+  //   if (selectedSection === 'documents') {
+  //     getPatientDocuments(patientId).then(setDocuments).catch(() => {
+  //       alert('Ошибка загрузки документов');
+  //     });
+  //   }
+  // }, [selectedSection, patientId]);
+
   useEffect(() => {
-    if (selectedSection === 'documents') {
-      getPatientDocuments(patientId).then(setDocuments).catch(() => {
-        alert('Ошибка загрузки документов');
-      });
-    }
+    const loadDocuments = async () => {
+      if (selectedSection === 'documents' && patientId) {
+        try {
+          setDocumentsError(null);
+          const data = await getPatientDocuments(patientId);
+          setDocuments(data);
+        } catch (error) {
+          setDocumentsError(error.message);
+          console.error('Document load error:', error);
+        }
+      }
+    };
+
+    loadDocuments();
   }, [selectedSection, patientId]);
 
   // История → выписки
@@ -137,6 +155,13 @@ export default function PatientDashboard({ patientId }) {
         {selectedSection === 'documents' && (
           <section className="section-documents">
             <h2>Мои документы</h2>
+
+            {documentsError && (
+              <div className="alert alert-danger">
+                Ошибка: {documentsError}
+              </div>
+            )}
+
             <div className="filter-row">
               <label>Показать:</label>
               <select

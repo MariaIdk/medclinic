@@ -7,11 +7,11 @@ export async function authFetch(url, opts = {}) {
   const access = localStorage.getItem('accessToken');
   const refresh = localStorage.getItem('refreshToken');
 
-  const buildHeaders = (token) => ({
-    'Content-Type': 'application/json',
-    ...(opts.headers || {}),
-    Authorization: token ? `Bearer ${token}` : '',
-  });
+  const buildHeaders = (token) => {
+    const headers = { ...(opts.headers || {}) };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  };
 
   let res = await fetch(url, {
     ...opts,
@@ -70,10 +70,13 @@ export const uploadPatientDocument = async ({ patientId, file, description }) =>
 
   const res = await authFetch('http://127.0.0.1:8000/api/patient-documents/', {
     method: 'POST',
-    body: formData
+    body: formData,
+    headers: {} // Явно сбрасываем заголовки
   });
+
   if (!res.ok) {
-    throw new Error('Ошибка при загрузке документа');
+    const errorData = await res.json();
+    throw new Error(errorData.detail || JSON.stringify(errorData));
   }
   return res.json();
 };

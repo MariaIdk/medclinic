@@ -1,54 +1,56 @@
 // src/components/LicensePage.js
-import React, { useEffect, useState, useContext } from 'react';
-import { authFetch } from './api';
-import { AuthContext } from '../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import './LicensePage.css';
 
 export default function LicensePage() {
-  const { accessToken } = useContext(AuthContext);
   const [licenses, setLicenses] = useState([]);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    authFetch('http://localhost:8000/api/licenses/')
-      .then(res => {
-        if (!res.ok) throw new Error('Не удалось загрузить лицензии');
-        return res.json();
-      })
-      .then(setLicenses)
-      .catch(err => {
-        console.error(err);
-        setError(err.message);
-      });
-  }, [accessToken]);
+    async function fetchLicenses() {
+      try {
+        const res = await fetch('http://localhost:8000/api/licenses/');
+        if (!res.ok) throw new Error(`Ошибка ${res.status}`);
+        const data = await res.json();
+        setLicenses(data);
+      } catch (err) {
+        console.error('Не удалось загрузить лицензии:', err);
+      }
+    }
+    fetchLicenses();
+  }, []);
 
   return (
     <>
       <Header />
-
       <main className="license-page">
         <h1>Лицензии клиники</h1>
-        {error && <p className="error">{error}</p>}
         <ul className="license-list">
           {licenses.map(lic => (
-            <li key={lic.id} className="license-item">
+            <li key={lic.id}>
               <strong>{lic.description}</strong>
-              <div>
-                <a 
-                  href={lic.license_file} 
-                  target="_blank" 
+              {/* Если это изображение, покажем его */}
+              {lic.license_file_url?.match(/\.(png|jpe?g|gif)$/i) ? (
+                <img
+                  src={lic.license_file_url}
+                  alt={lic.description}
+                  className="license-image"
+                />
+              ) : (
+                // иначе просто ссылка на файл
+                <a
+                  href={lic.license_file_url}
+                  target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Открыть
+                  Открыть файл
                 </a>
-              </div>
+              )}
             </li>
           ))}
         </ul>
       </main>
-
       <Footer />
     </>
   );

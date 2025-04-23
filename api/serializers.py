@@ -105,9 +105,18 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 
 class LicenseSerializer(serializers.ModelSerializer):
+    # Передаем URL для файла
+    license_file_url = serializers.SerializerMethodField()
+
     class Meta:
         model = License
-        fields = '__all__'
+        fields = ['id', 'description', 'license_file', 'license_file_url']
+
+    def get_license_file_url(self, obj):
+        # Создаем ссылку на файл
+        if obj.license_file:
+            return obj.license_file.url
+        return None
 
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:

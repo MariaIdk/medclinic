@@ -194,6 +194,7 @@ class LicenseViewSet(viewsets.ModelViewSet):
     """
     queryset = License.objects.all()
     serializer_class = LicenseSerializer
+    permission_classes = [AllowAny]
 
 
 # Направление | Врач (ФИО)  | Кабинет | День недели | Время начала | Время конца | Дата (необяз.) | Длительность

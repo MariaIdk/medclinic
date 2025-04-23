@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PatientDashboard.css';
-import { getPatientDocuments, deletePatientDocument } from './api'; // Исправлен путь
+import { getPatientDocuments, deletePatientDocument } from '../api';
 import AppointmentForm from './AppointmentForm';
 import MyAppointments from './MyAppointments';
 import PersonalInfo from './PersonalInfo';
@@ -19,95 +19,94 @@ export default function PatientDashboard({ patientId }) {
 
   const navigate = useNavigate();
 
+  // Меню
   const handleSectionClick = (section) => {
-    if (section === 'home') {
-      navigate('/');
-      return;
-    }
-    if (section === 'logout') {
-      setShowLogoutConfirm(true);
-      return;
-    }
+    if (section === 'home') return navigate('/');
+    if (section === 'logout') return setShowLogoutConfirm(true);
+
     setSelectedSection(section);
-    setHistorySubsection(section === 'history' ? 'appointments' : null);
+    if (section !== 'history') setHistorySubsection(null);
   };
 
-  // Загрузка документов
+  // Мои документы
   useEffect(() => {
-    if (selectedSection === 'documents' || selectedSection === 'history') {
-      getPatientDocuments(patientId)
-        .then(data => {
-          setDocuments(data);
-          // Автоматическая загрузка выписок при переходе в историю
-          if (selectedSection === 'history') {
-            setHistoryDocs(data.filter(d => d.uploaded_by === 'doctor'));
-          }
-        })
-        .catch(() => alert('Ошибка загрузки документов'));
+    if (selectedSection === 'documents') {
+      getPatientDocuments(patientId).then(setDocuments).catch(() => {
+        alert('Ошибка загрузки документов');
+      });
     }
   }, [selectedSection, patientId]);
 
-  // Обработка истории
+  // История → выписки
   useEffect(() => {
     if (selectedSection === 'history' && historySubsection === 'summaries') {
       getPatientDocuments(patientId)
         .then(data => setHistoryDocs(data.filter(d => d.uploaded_by === 'doctor')))
         .catch(() => alert('Ошибка загрузки выписок'));
     }
-  }, [historySubsection, patientId]);
+  }, [selectedSection, historySubsection, patientId]);
 
   const filteredDocuments = documents.filter(d => 
     docFilter === 'all' ? true : d.uploaded_by === docFilter
   );
 
+  // Удалить документ
   const handleDeleteDocument = async (id) => {
     if (!window.confirm('Точно удалить документ?')) return;
     try {
       await deletePatientDocument(id);
       setDocuments(docs => docs.filter(d => d.id !== id));
-      setHistoryDocs(docs => docs.filter(d => d.id !== id));
     } catch {
       alert('Ошибка при удалении');
     }
   };
 
+  // После загрузки нового
   const handleUploadDone = () => {
-    getPatientDocuments(patientId)
-      .then(data => {
-        setDocuments(data);
-        setHistoryDocs(data.filter(d => d.uploaded_by === 'doctor'));
-      });
+    getPatientDocuments(patientId).then(setDocuments);
   };
 
+  // Подтвердить/отменить выход
   const confirmLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     navigate('/');
   };
+  const cancelLogout = () => setShowLogoutConfirm(false);
 
   return (
     <div className="dashboard-container">
       <aside className="dashboard-sidebar">
         <ul>
           <li onClick={() => handleSectionClick('home')}>← Главная</li>
-          <li className={selectedSection === 'personalInfo' ? 'active' : ''}
-              onClick={() => handleSectionClick('personalInfo')}>
+          <li 
+            className={selectedSection==='personalInfo'?'active':''}
+            onClick={() => handleSectionClick('personalInfo')}
+          >
             Личная информация
           </li>
-          <li className={selectedSection === 'appointments' ? 'active' : ''}
-              onClick={() => handleSectionClick('appointments')}>
+          <li 
+            className={selectedSection==='appointments'?'active':''}
+            onClick={() => handleSectionClick('appointments')}
+          >
             Запись к врачу
           </li>
-          <li className={selectedSection === 'myRecords' ? 'active' : ''}
-              onClick={() => handleSectionClick('myRecords')}>
+          <li 
+            className={selectedSection==='myRecords'?'active':''}
+            onClick={() => handleSectionClick('myRecords')}
+          >
             Мои записи
           </li>
-          <li className={selectedSection === 'documents' ? 'active' : ''}
-              onClick={() => handleSectionClick('documents')}>
+          <li 
+            className={selectedSection==='documents'?'active':''}
+            onClick={() => handleSectionClick('documents')}
+          >
             Мои документы
           </li>
-          <li className={selectedSection === 'history' ? 'active' : ''}
-              onClick={() => handleSectionClick('history')}>
+          <li 
+            className={selectedSection==='history'?'active':''}
+            onClick={() => handleSectionClick('history')}
+          >
             История
           </li>
           <li onClick={() => handleSectionClick('logout')}>Выйти</li>
@@ -115,69 +114,84 @@ export default function PatientDashboard({ patientId }) {
       </aside>
 
       <main className="dashboard-content">
-        {selectedSection === 'personalInfo' && <PersonalInfo patientId={patientId} />}
-        
-        {selectedSection === 'appointments' && <AppointmentForm patientId={patientId} />}
-        
+        {/* Личная информация */}
+        {selectedSection === 'personalInfo' && (
+          <PersonalInfo patientId={patientId} />
+        )}
+
+        {/* Запись к врачу */}
+        {selectedSection === 'appointments' && (
+          <AppointmentForm patientId={patientId} />
+        )}
+
+        {/* Мои записи */}
         {selectedSection === 'myRecords' && (
           <MyAppointments
             patientId={patientId}
-            statusFilter={['scheduled', 'in_progress']}
+            statusFilter={['scheduled','in_progress']}
             sortAsc={true}
           />
         )}
 
+        {/* Мои документы */}
         {selectedSection === 'documents' && (
           <section className="section-documents">
             <h2>Мои документы</h2>
             <div className="filter-row">
               <label>Показать:</label>
-              <select value={docFilter} onChange={e => setDocFilter(e.target.value)}>
+              <select
+                value={docFilter}
+                onChange={e => setDocFilter(e.target.value)}
+              >
                 <option value="all">Все</option>
                 <option value="patient">Пациентом</option>
                 <option value="doctor">Врачом</option>
               </select>
             </div>
-            <PatientDocumentList 
-              documents={filteredDocuments} 
-              onDelete={handleDeleteDocument} 
+            <PatientDocumentList
+              documents={filteredDocuments}
+              onDelete={handleDeleteDocument}
             />
-            <DocumentUpload 
-              patientId={patientId} 
-              onUpload={handleUploadDone} 
+            <DocumentUpload
+              patientId={patientId}
+              onUpload={handleUploadDone}
             />
           </section>
         )}
 
+        {/* История */}
         {selectedSection === 'history' && (
           <section className="section-history">
             <h2>История</h2>
             <div className="history-buttons">
-              <button className={historySubsection === 'appointments' ? 'active' : ''}
-                      onClick={() => setHistorySubsection('appointments')}>
+              <button
+                className={historySubsection==='appointments'?'active':''}
+                onClick={() => setHistorySubsection('appointments')}
+              >
                 Посещения
               </button>
-              <button className={historySubsection === 'summaries' ? 'active' : ''}
-                      onClick={() => setHistorySubsection('summaries')}>
+              <button
+                className={historySubsection==='summaries'?'active':''}
+                onClick={() => setHistorySubsection('summaries')}
+              >
                 Выписки
               </button>
             </div>
 
-            {historySubsection === 'appointments' && (
+            {historySubsection==='appointments' && (
               <MyAppointments
                 patientId={patientId}
-                statusFilter={['completed', 'cancelled', 'no_show']}
+                statusFilter={['completed','cancelled','no_show']}
                 sortAsc={false}
                 showDocsWithActions={true}
               />
             )}
-
-            {historySubsection === 'summaries' && (
+            {historySubsection==='summaries' && (
               <>
                 <h3>Выписки</h3>
-                <PatientDocumentList 
-                  documents={historyDocs} 
-                  onDelete={null} 
+                <PatientDocumentList
+                  documents={historyDocs}
+                  onDelete={null}
                 />
               </>
             )}
@@ -185,19 +199,18 @@ export default function PatientDashboard({ patientId }) {
         )}
       </main>
 
+      {/* Модалка подтверждения выхода */}
       {showLogoutConfirm && (
         <div className="logout-modal-backdrop">
           <div className="logout-modal">
             <p>Выйти из кабинета?</p>
-            <div className="modal-buttons">
-              <button className="btn-confirm" onClick={confirmLogout}>Да</button>
-              <button className="btn-cancel" onClick={() => setShowLogoutConfirm(false)}>
-                Нет
-              </button>
-            </div>
+            <button onClick={confirmLogout}>Да</button>
+            <button onClick={cancelLogout}>Нет</button>
           </div>
         </div>
       )}
     </div>
-  );
+);
 }
+
+

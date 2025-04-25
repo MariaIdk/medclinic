@@ -1,8 +1,9 @@
 // src/components/LoginForm.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from './api';  // ← путь к api/index.js
+import { loginUser } from './api';
 import { AuthContext } from '../contexts/AuthContext';
+import 'bootstrap/dist/css/bootstrap.min.css'; // Импорт стилей Bootstrap
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -22,7 +23,6 @@ export default function LoginForm() {
     setError('');
     try {
       const { access, refresh } = await loginUser(formData);
-      // сохраняем токены и userId
       const payload = JSON.parse(atob(access.split('.')[1]));
       login(access, payload.user_id);
       localStorage.setItem('refreshToken', refresh);
@@ -35,18 +35,52 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="login-form">
-      <h2>Вход</h2>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <label>Логин:</label>
-        <input name="username" value={formData.username} onChange={handleChange} required />
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6 col-lg-4">
+          <div className="card shadow">
+            <div className="card-body">
+              <h2 className="card-title text-center mb-4">Вход</h2>
+              {error && <div className="alert alert-danger">{error}</div>}
+              
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label">Логин:</label>
+                  <input 
+                    name="username" 
+                    className="form-control"
+                    value={formData.username} 
+                    onChange={handleChange} 
+                    required 
+                  />
+                </div>
 
-        <label>Пароль:</label>
-        <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+                <div className="mb-4">
+                  <label className="form-label">Пароль:</label>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    className="form-control"
+                    value={formData.password} 
+                    onChange={handleChange} 
+                    required 
+                  />
+                </div>
 
-        <button type="submit" disabled={loading}>{loading ? 'Загрузка...' : 'Войти'}</button>
-      </form>
+                <div className="d-grid">
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Загрузка...' : 'Войти'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

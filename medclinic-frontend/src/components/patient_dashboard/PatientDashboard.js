@@ -1,13 +1,13 @@
-// src/components/PatientDashboard.js
+// PatientDashboard.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './PatientDashboard.css';
-import { getPatientDocuments, deletePatientDocument } from '../api';
-import AppointmentForm from './AppointmentForm';
-import MyAppointments from './MyAppointments';
+import '../../styles/PatientDashboard.css';
+import { getPatientDocuments, deletePatientDocument } from '../../api';
+import AppointmentForm from '../appointments/AppointmentForm';
+import MyAppointments from '../appointments/MyAppointments';
 import PersonalInfo from './PersonalInfo';
 import DocumentUpload from './DocumentUpload';
-import PatientDocumentList from './PatientDocumentList';
+import PatientDocumentList from '../documents/PatientDocumentList';
 
 export default function PatientDashboard({ patientId }) {
   const [selectedSection, setSelectedSection] = useState('personalInfo');

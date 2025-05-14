@@ -1,11 +1,11 @@
-// src/components/SchedulePage.js
+//SchedulePage.js
 import React, { useEffect, useState, useContext } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { authFetch } from "./api";
-import { AuthContext } from "../contexts/AuthContext";
-import Header from "./Header";
-import Footer from "./Footer";
-import "./AppointmentSchedule.css"; // ваши стили для grid
+import { authFetch } from "../../api";
+import { AuthContext } from "../../contexts/AuthContext";
+import Header from "../common/Header";
+import Footer from "../common/Footer";
+import "../../styles/AppointmentSchedule.css";
 
 const weekdays = [
   { value: 1, label: "Пн" },

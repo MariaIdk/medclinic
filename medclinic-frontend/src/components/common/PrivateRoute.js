@@ -1,7 +1,7 @@
-// src/components/PrivateRoute.js
+// PrivateRoute.js
 import React, { useContext } from 'react';
 import { Route, Navigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { AuthContext } from '../../contexts/AuthContext';
 
 // Защищённый маршрут для React Router v6
 export default function PrivateRoute({ element: Component, ...rest }) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../components/api'; // проверь путь!
-import './RegistrationForm.css';
+import { registerUser } from '../../api';
+import '../../styles/RegistrationForm.css';
 
 export default function RegistrationForm() {
   const navigate = useNavigate();

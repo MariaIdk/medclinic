@@ -1,9 +1,10 @@
-// src/components/LicensePage.js
+// LicensePage.js
 import React, { useEffect, useState } from 'react';
-import Header from './Header';
-import Footer from './Footer';
+import Header from '../common/Header';
+import Footer from '../common/Footer';
+import '../../styles/LicensePage.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './LicensePage.css';
+
 
 export default function LicensePage() {
   const [licenses, setLicenses] = useState([]);

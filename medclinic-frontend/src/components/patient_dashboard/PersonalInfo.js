@@ -1,9 +1,9 @@
 // src/components/PersonalInfo.js
 import React, { useState, useEffect, useContext } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { authFetch } from './api';
-import { AuthContext } from '../contexts/AuthContext';
-import './PersonalInfo.css'; // ваши кастомные стили (если нужны)
+import { authFetch } from '../../api';
+import { AuthContext } from '../../contexts/AuthContext';
+import '../../styles/PersonalInfo.css'; // ваши кастомные стили (если нужны)
 
 export default function PersonalInfo({ patientId }) {
   const { accessToken } = useContext(AuthContext);

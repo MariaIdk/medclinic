@@ -1,6 +1,6 @@
 // PatientDocumentList.js
 import React, { useState, useEffect, useRef } from 'react';
-import './PatientDocumentList.css';
+import '../../styles/PatientDocumentList.css';
 
 const PatientDocumentList = ({ documents, onDelete }) => {
   const [selectedDocId, setSelectedDocId] = useState(null);

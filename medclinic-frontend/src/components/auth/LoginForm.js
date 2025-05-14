@@ -1,8 +1,8 @@
 // src/components/LoginForm.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from './api';
-import { AuthContext } from '../contexts/AuthContext';
+import { loginUser } from '../../api';
+import { AuthContext } from '../../contexts/AuthContext';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Импорт стилей Bootstrap
 
 export default function LoginForm() {

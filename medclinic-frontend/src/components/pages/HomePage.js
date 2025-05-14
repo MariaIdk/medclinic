@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './HomePage.css'; // Можно оставить для кастомных стилей если нужно
+import '../../styles/HomePage.css';
 
 export default function HomePage() {
   const [showAuthOptions, setShowAuthOptions] = useState(false);

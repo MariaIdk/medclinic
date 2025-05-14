@@ -1,12 +1,14 @@
 import React, { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthContext } from './contexts/AuthContext'; // Импортируем AuthContext
-import RegistrationForm from './components/RegistrationForm';
-import LoginForm from './components/LoginForm';
-import PatientDashboard from './components/PatientDashboard';
-import HomePage from './components/HomePage';
-import SchedulePage from "./components/SchedulePage";  // Импортируем компонент SchedulePage
-import LicensePage from './components/LicensePage';
+import { AuthContext } from './contexts/AuthContext';
+
+import RegistrationForm from './components/auth/RegistrationForm';
+import LoginForm        from './components/auth/LoginForm';
+import PatientDashboard from './components/patient_dashboard/PatientDashboard';
+import HomePage         from './components/pages/HomePage';
+import SchedulePage     from './components/pages/SchedulePage';
+import LicensePage      from './components/pages/LicensePage';
+
 
 function PrivateRoute({ children }) {
   const { accessToken } = useContext(AuthContext);
@@ -17,6 +19,7 @@ function PrivateRoute({ children }) {
 
 function App() {
   const { accessToken, userId } = useContext(AuthContext);
+  //const { userId } = useContext(AuthContext);
 
   return (
     <BrowserRouter>

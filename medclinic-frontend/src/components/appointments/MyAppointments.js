@@ -1,9 +1,9 @@
-// src/components/MyAppointments.js
+//MyAppointments.js
 import React, { useState, useEffect, useContext } from 'react';
-import './MyAppointments.css';
-import { authFetch } from './api';               // authFetch из api/index.js
-import { AuthContext } from '../contexts/AuthContext';
-import PatientDocumentList from './PatientDocumentList';
+import '../../styles/MyAppointments.css';
+import { authFetch } from '../../api';
+import { AuthContext } from '../../contexts/AuthContext';
+import PatientDocumentList from '../documents/PatientDocumentList';
 
 export default function MyAppointments({
   patientId,
@@ -153,18 +153,6 @@ export default function MyAppointments({
             </tr>
           </thead>
           <tbody>
-            {/* {appointments.map(appt => (
-              <tr
-                key={appt.id}
-                onClick={() => onRowClick(appt)}
-                className={selected?.id === appt.id ? 'selected' : ''}
-              >
-                <td>{appt.appointment_date}</td>
-                <td>{appt.appointment_time.slice(0, 5)}</td>
-                <td>{appt.doctor_name}</td>
-                <td>{appt.service_name}</td>
-              </tr>
-            ))} */}
             {appointments.map(appt => {
               const isSelected = selected?.id === appt.id;
               // если отменён или пациент не пришёл — строка «серее»

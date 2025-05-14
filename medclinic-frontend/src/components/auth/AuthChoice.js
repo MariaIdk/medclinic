@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './AuthChoice.css';
+import '../../styles/AuthChoice.css';
 
 export default function AuthChoice() {
   return (

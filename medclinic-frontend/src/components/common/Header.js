@@ -1,8 +1,8 @@
-// src/components/Header.js
+// Header.js
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
-import './Header.css';
+import { AuthContext } from '../../contexts/AuthContext';
+import '../../styles/Header.css';
 
 export default function Header() {
   const { accessToken } = useContext(AuthContext);

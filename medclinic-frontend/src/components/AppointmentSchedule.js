@@ -154,9 +154,9 @@ export default function AppointmentSchedule({ patientId }) {
 
     // блокируем занятые слоты у доктора и пациента
     Promise.all([
-      authFetch(`http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${isoDate}`)
+      authFetch(`http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${isoDate}&status=scheduled`)
         .then(r=> r.ok ? r.json() : []),
-      authFetch(`http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${isoDate}`)
+      authFetch(`http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${isoDate}&status=scheduled`)
         .then(r=> r.ok ? r.json() : [])
     ]).then(([docApps, patApps]) => {
       const docTimes = Array.isArray(docApps) ? docApps.map(a=>a.appointment_time.slice(0,5)) : [];

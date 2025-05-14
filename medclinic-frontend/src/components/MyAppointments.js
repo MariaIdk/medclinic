@@ -35,7 +35,7 @@ export default function MyAppointments({
 
         // 2. Загружаем приёмы пациента
         const apptRes = await authFetch(
-          `http://localhost:8000/api/appointments/?patient=${patientId}&ordering=appointment_date`
+          `http://localhost:8000/api/appointments/?patient=${patientId}&status=all&ordering=appointment_date`
         );
         if (!apptRes.ok) throw new Error('Ошибка загрузки записей');
         const appts = await apptRes.json();
@@ -153,7 +153,7 @@ export default function MyAppointments({
             </tr>
           </thead>
           <tbody>
-            {appointments.map(appt => (
+            {/* {appointments.map(appt => (
               <tr
                 key={appt.id}
                 onClick={() => onRowClick(appt)}
@@ -164,7 +164,31 @@ export default function MyAppointments({
                 <td>{appt.doctor_name}</td>
                 <td>{appt.service_name}</td>
               </tr>
-            ))}
+            ))} */}
+            {appointments.map(appt => {
+              const isSelected = selected?.id === appt.id;
+              // если отменён или пациент не пришёл — строка «серее»
+              const isDisabled = ['cancelled', 'no_show'].includes(appt.status);
+
+              const rowClass = [
+                isSelected ? 'selected' : '',
+                isDisabled ? 'disabled-row' : ''
+              ].join(' ').trim();
+
+              return (
+                <tr
+                  key={appt.id}
+                  onClick={() => onRowClick(appt)}
+                  className={rowClass}
+                >
+                  <td>{appt.appointment_date}</td>
+                  <td>{appt.appointment_time.slice(0, 5)}</td>
+                  <td>{appt.doctor_name}</td>
+                  <td>{appt.service_name}</td>
+                </tr>
+              );
+            })}
+
           </tbody>
         </table>
       )}

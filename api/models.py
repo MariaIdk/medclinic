@@ -160,29 +160,66 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+    # def clean(self):
+    #     """Проверка на пересечение по времени у врача и пациента"""
+    #     start_dt = datetime.combine(self.appointment_date, self.appointment_time)
+
+    #     # Получаем расписание врача на этот день недели
+    #     weekday = self.appointment_date.isoweekday()  # 1 = Понедельник
+
+    #     schedule = ClinicSchedule.objects.filter(
+    #         doctor=self.doctor,
+    #         weekday=weekday
+    #     ).first()
+
+    #     if not schedule:
+    #         raise ValidationError("У врача нет расписания на этот день недели.")
+
+    #     # Определим длительность приёма
+    #     duration = schedule.appointment_duration or 15
+    #     end_dt = start_dt + timedelta(minutes=duration)
+
+    #     # Проверка пересечения у врача
+    #     overlapping_for_doctor = Appointment.objects.filter(
+    #         doctor=self.doctor,
+    #         appointment_date=self.appointment_date,
+    #     ).exclude(id=self.id).filter(
+    #         appointment_time__lt=end_dt.time(),
+    #     ).filter(
+    #         appointment_time__gte=self.appointment_time
+    #     )
+    #     if overlapping_for_doctor.exists():
+    #         raise ValidationError("У врача уже есть приём в это время.")
+
+    #     # Проверка пересечения у пациента
+    #     overlapping_for_patient = Appointment.objects.filter(
+    #         patient=self.patient,
+    #         appointment_date=self.appointment_date,
+    #     ).exclude(id=self.id).filter(
+    #         appointment_time__lt=end_dt.time(),
+    #     ).filter(
+    #         appointment_time__gte=self.appointment_time
+    #     )
+    #     if overlapping_for_patient.exists():
+    #         raise ValidationError("У пациента уже есть приём в это время.")
     def clean(self):
         """Проверка на пересечение по времени у врача и пациента"""
         start_dt = datetime.combine(self.appointment_date, self.appointment_time)
-
-        # Получаем расписание врача на этот день недели
-        weekday = self.appointment_date.isoweekday()  # 1 = Понедельник
-
+        weekday = self.appointment_date.isoweekday()
         schedule = ClinicSchedule.objects.filter(
             doctor=self.doctor,
             weekday=weekday
         ).first()
-
         if not schedule:
             raise ValidationError("У врача нет расписания на этот день недели.")
-
-        # Определим длительность приёма
         duration = schedule.appointment_duration or 15
         end_dt = start_dt + timedelta(minutes=duration)
 
-        # Проверка пересечения у врача
+        # учитываем только приёмы со статусом scheduled
         overlapping_for_doctor = Appointment.objects.filter(
             doctor=self.doctor,
             appointment_date=self.appointment_date,
+            status='scheduled',
         ).exclude(id=self.id).filter(
             appointment_time__lt=end_dt.time(),
         ).filter(
@@ -191,10 +228,10 @@ class Appointment(models.Model):
         if overlapping_for_doctor.exists():
             raise ValidationError("У врача уже есть приём в это время.")
 
-        # Проверка пересечения у пациента
         overlapping_for_patient = Appointment.objects.filter(
             patient=self.patient,
             appointment_date=self.appointment_date,
+            status='scheduled',
         ).exclude(id=self.id).filter(
             appointment_time__lt=end_dt.time(),
         ).filter(

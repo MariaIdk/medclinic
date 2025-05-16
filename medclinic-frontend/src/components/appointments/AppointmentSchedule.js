@@ -153,19 +153,66 @@ export default function AppointmentSchedule({ patientId }) {
     setAvailableSlots(slots);
 
     // блокируем занятые слоты у доктора и пациента
-    Promise.all([
-      authFetch(`http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${isoDate}&status=scheduled`)
-        .then(r=> r.ok ? r.json() : []),
-      authFetch(`http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${isoDate}&status=scheduled`)
-        .then(r=> r.ok ? r.json() : [])
-    ]).then(([docApps, patApps]) => {
-      const docTimes = Array.isArray(docApps) ? docApps.map(a=>a.appointment_time.slice(0,5)) : [];
-      const patTimes = Array.isArray(patApps) ? patApps.map(a=>a.appointment_time.slice(0,5)) : [];
-      setBlockedSlots([...new Set([...docTimes, ...patTimes])]);
-    }).catch(console.error);
+    // Promise.all([
+    //   authFetch(`http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${isoDate}&status=scheduled`)
+    //     .then(r=> r.ok ? r.json() : []),
+    //   authFetch(`http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${isoDate}&status=scheduled`)
+    //     .then(r=> r.ok ? r.json() : [])
+    // ]).then(([docApps, patApps]) => {
+    //   const docTimes = Array.isArray(docApps) ? docApps.map(a=>a.appointment_time.slice(0,5)) : [];
+    //   const patTimes = Array.isArray(patApps) ? patApps.map(a=>a.appointment_time.slice(0,5)) : [];
+    //   setBlockedSlots([...new Set([...docTimes, ...patTimes])]);
+    // }).catch(console.error);
+    // …
+    console.log("🛠️ patientId prop:", patientId);
+    console.log("🛠️ docId prop:", docId);
+    console.log("🛠️ isoDate computed:", isoDate);
+
+    const urlDoc = `http://localhost:8000/api/appointments/?doctor=${docId}&appointment_date=${isoDate}&status=scheduled`;
+    const urlPat = `http://localhost:8000/api/appointments/?patient=${patientId}&appointment_date=${isoDate}&status=scheduled`;
+
+    console.log("🛠️ Fetching doctor slots from:", urlDoc);
+    console.log("🛠️ Fetching patient slots from:", urlPat);
+
+    const fetchDoc = authFetch(urlDoc)
+      .then(r => {
+        console.log("🛠️ docFetch status:", r.status);
+        return r.ok ? r.json() : [];
+      });
+
+    const fetchPat = authFetch(urlPat)
+      .then(r => {
+        console.log("🛠️ patFetch status:", r.status);
+        return r.ok ? r.json() : [];
+      });
+
+    Promise.all([fetchDoc, fetchPat])
+      .then(([docApps, patApps]) => {
+        console.log("🛠️ docApps response:", docApps);
+        console.log("🛠️ patApps response:", patApps);
+
+        const docTimes = Array.isArray(docApps)
+          ? docApps.map(a => a.appointment_time.slice(0,5))
+          : [];
+        const patTimes = Array.isArray(patApps)
+          ? patApps.map(a => a.appointment_time.slice(0,5))
+          : [];
+
+        console.log("🛠️ docTimes:", docTimes);
+        console.log("🛠️ patTimes:", patTimes);
+
+        const blocked = Array.from(new Set([...docTimes, ...patTimes]));
+        console.log("🛠️ Final blockedSlots:", blocked);
+
+        setBlockedSlots(blocked);
+      })
+      .catch(err => console.error("🛠️ fetch error:", err));
+    // …
+
 
     setModalStep(1);
   };
+  
 
   const confirmAppointment = () => {
     const [d,m,y] = modalDate.split('.');

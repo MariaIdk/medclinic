@@ -23,17 +23,6 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class PatientDocumentSerializer(serializers.ModelSerializer):
-#     # Здесь document_type переименован в description, если требуется, можно добавить дополнительные методы, если нужно
-#     class Meta:
-#         model = PatientDocument
-#         fields = '__all__'
-
-
-# class DoctorSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Doctor
-#         fields = '__all__'
 
 
 class DoctorSerializer(serializers.ModelSerializer):

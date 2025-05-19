@@ -1,8 +1,8 @@
 // AppointmentSchedule.js
 import React, { useEffect, useState, useContext } from "react";
-import "../../styles/AppointmentSchedule.css";
-import { authFetch } from "../../api";
-import { AuthContext } from "../../contexts/AuthContext";
+import "../../../styles/AppointmentSchedule.css";
+import { authFetch } from "../../../api";
+import { AuthContext } from "../../../contexts/AuthContext";
 
 const weekdays = [
   { value: 1, label: "Пн" },

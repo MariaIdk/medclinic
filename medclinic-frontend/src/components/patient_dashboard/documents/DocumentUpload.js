@@ -1,7 +1,7 @@
 //DocumentUpload.js
 import React, { useState, useContext } from 'react';
-import { uploadPatientDocument } from '../../api';
-import { AuthContext } from '../../contexts/AuthContext';
+import { uploadPatientDocument } from '../../../api';
+import { AuthContext } from '../../../contexts/AuthContext';
 
 export default function DocumentUpload({ patientId, onUpload }) {
   const { accessToken } = useContext(AuthContext);

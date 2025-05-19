@@ -1,8 +1,8 @@
 //MyAppointments.js
 import React, { useState, useEffect, useContext } from 'react';
-import '../../styles/MyAppointments.css';
-import { authFetch } from '../../api';
-import { AuthContext } from '../../contexts/AuthContext';
+import '../../../styles/MyAppointments.css';
+import { authFetch } from '../../../api';
+import { AuthContext } from '../../../contexts/AuthContext';
 import PatientDocumentList from '../documents/PatientDocumentList';
 
 export default function MyAppointments({

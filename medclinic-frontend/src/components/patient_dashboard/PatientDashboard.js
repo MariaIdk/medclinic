@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/PatientDashboard.css';
 import { getPatientDocuments, deletePatientDocument } from '../../api';
-import AppointmentForm from '../appointments/AppointmentForm';
-import MyAppointments from '../appointments/MyAppointments';
+import AppointmentForm from './appointments/AppointmentForm';
+import MyAppointments from './appointments/MyAppointments';
 import PersonalInfo from './PersonalInfo';
-import DocumentUpload from './DocumentUpload';
-import PatientDocumentList from '../documents/PatientDocumentList';
+import DocumentUpload from './documents/DocumentUpload';
+import PatientDocumentList from './documents/PatientDocumentList';
 
 export default function PatientDashboard({ patientId }) {
   const [selectedSection, setSelectedSection] = useState('personalInfo');

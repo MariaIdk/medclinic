@@ -25,10 +25,31 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 
+# class DoctorSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Doctor
+#         fields = ['id', 'first_name', 'last_name', 'patronymic', 'specialty']
+class SpecialtySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specialty
+        fields = ['id', 'name']
+
 class DoctorSerializer(serializers.ModelSerializer):
+    specialty = SpecialtySerializer(read_only=True)
+    email = serializers.EmailField(read_only=True)
+    phone_number = serializers.CharField(read_only=True)
+
     class Meta:
         model = Doctor
-        fields = ['id', 'first_name', 'last_name', 'patronymic', 'specialty']
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'patronymic',
+            'specialty',
+            'email',
+            'phone_number',
+        ]
 
 class PatientDocumentSerializer(serializers.ModelSerializer):
     uploaded_by_doctor = DoctorSerializer(read_only=True)

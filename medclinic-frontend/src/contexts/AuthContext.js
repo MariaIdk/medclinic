@@ -5,44 +5,68 @@ import { authFetch } from '../api';
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(null);
-  const [userId, setUserId]           = useState(null);
-  const [role, setRole]               = useState(null); // 'patient' или 'doctor'
-  const [loading, setLoading]         = useState(true);
+  const [accessToken, setAccessToken]       = useState(null);
+  const [userId, setUserId]                 = useState(null);
+  const [role, setRole]                     = useState(null);
+  const [patientProfileId, setPatientId]    = useState(null);
+  const [doctorProfileId, setDoctorId]      = useState(null);
+  const [loading, setLoading]               = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  // 1) При старте читаем токен и id из localStorage
+  // 1) Считаем токен и userId из localStorage
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    const id    = localStorage.getItem('userId');
-    if (token && id) {
-      setAccessToken(token);
-      setUserId(Number(id));
+    const t = localStorage.getItem('accessToken');
+    const u = localStorage.getItem('userId');
+    if (t && u) {
+      setAccessToken(t);
+      setUserId(Number(u));
+      setProfileLoading(true);
     }
     setLoading(false);
   }, []);
 
-  // 2) Как только у нас есть токен и userId — подгружаем роль из /users/me/
+  // 2) Если есть токен+userId — подгружаем /users/me/ и профиль
   useEffect(() => {
-    if (!accessToken || !userId) return;
+    if (!accessToken || !userId) {
+      setProfileLoading(false);
+      return;
+    }
 
-    authFetch(`${process.env.REACT_APP_API_URL}/users/me/`)
-      .then(res => {
+    (async () => {
+      try {
+        // получаем данные самого пользователя
+        const res = await authFetch(`${process.env.REACT_APP_API_URL}/users/me/`);
         if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then(user => {
-        // Ожидаем array of strings в user.groups
-        if (user.groups.includes('Врачи') || user.groups.includes('Doctors')) {
+        const user = await res.json();
+
+        const groups = user.groups || [];
+        if (groups.includes('Врачи') || groups.includes('Doctors')) {
           setRole('doctor');
-        } else if (user.groups.includes('Пациенты') || user.groups.includes('Patients')) {
-          setRole('patient');
+          // ищем профиль врача по user.id
+          const drRes = await authFetch(
+            `${process.env.REACT_APP_API_URL}/doctors/?user=${user.id}`
+          );
+          if (drRes.ok) {
+            const drList = await drRes.json();
+            if (drList.length) setDoctorId(drList[0].id);
+          }
         } else {
-          setRole(null);
+          setRole('patient');
+          // ищем профиль пациента по user.id
+          const ptRes = await authFetch(
+            `${process.env.REACT_APP_API_URL}/patients/?user=${user.id}`
+          );
+          if (ptRes.ok) {
+            const ptList = await ptRes.json();
+            if (ptList.length) setPatientId(ptList[0].id);
+          }
         }
-      })
-      .catch(() => {
+      } catch {
         setRole(null);
-      });
+      } finally {
+        setProfileLoading(false);
+      }
+    })();
   }, [accessToken, userId]);
 
   const login = (token, id) => {
@@ -50,21 +74,33 @@ export function AuthProvider({ children }) {
     localStorage.setItem('userId', id);
     setAccessToken(token);
     setUserId(id);
+    setProfileLoading(true);
   };
 
   const logout = () => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userId');
     setAccessToken(null);
     setUserId(null);
     setRole(null);
+    setPatientId(null);
+    setDoctorId(null);
   };
 
-  // Пока идёт чтение из localStorage — не рендерим приложение
-  if (loading) return null;
+  // пока грузим localStorage или профили — ничего не рендерим
+  if (loading || profileLoading) return null;
 
   return (
-    <AuthContext.Provider value={{ accessToken, userId, role, login, logout }}>
+    <AuthContext.Provider value={{
+      accessToken,
+      userId,
+      role,
+      patientProfileId,
+      doctorProfileId,
+      login,
+      logout
+    }}>
       {children}
     </AuthContext.Provider>
   );

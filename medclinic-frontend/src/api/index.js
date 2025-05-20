@@ -29,7 +29,6 @@ export async function authFetch(url, opts = {}) {
     if (refreshRes.ok) {
       const { access: newAccess } = await refreshRes.json();
       localStorage.setItem('accessToken', newAccess);
-
       res = await fetch(url, {
         ...opts,
         headers: buildHeaders(newAccess),
@@ -43,7 +42,46 @@ export async function authFetch(url, opts = {}) {
   return res;
 }
 
-// Документы пациента
+// Регистрация нового пациента
+export const registerUser = async (fields) => {
+  const res = await fetch(
+    `${process.env.REACT_APP_API_URL}/register/`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = Object.values(data).flat().join(' ');
+    throw new Error(msg || 'Ошибка регистрации');
+  }
+  return data;
+};
+
+// Вход (получение JWT)
+export const loginUser = async ({ username, password }) => {
+  const res = await fetch(
+    `${process.env.REACT_APP_API_URL}/token/`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Ошибка входа');
+
+  // сохраняем токены
+  localStorage.setItem('accessToken', data.access);
+  localStorage.setItem('refreshToken', data.refresh);
+
+  // возвращаем оба токена, остальное расшифруем уже на клиенте
+  return { access: data.access, refresh: data.refresh };
+};
+
+// Прочие эндпоинты (документы и т.д.)
 export const getPatientDocuments = async (patientId) => {
   const res = await authFetch(
     `${process.env.REACT_APP_API_URL}/patient-documents/?patient=${patientId}`
@@ -77,60 +115,4 @@ export const deletePatientDocument = async (docId) => {
   );
   if (!res.ok) throw new Error('Ошибка при удалении документа');
   return true;
-};
-
-// Аутентификация и регистрация
-export const registerUser = async ({
-  username,
-  password,
-  firstName,
-  lastName,
-  patronymic,
-  dateOfBirth,
-  email,
-  phoneNumber,
-  address
-}) => {
-  const res = await fetch(
-    `${process.env.REACT_APP_API_URL}/register/`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        patronymic: patronymic || '',
-        date_of_birth: dateOfBirth,
-        email,
-        phone_number: phoneNumber,
-        address
-      }),
-    }
-  );
-  const data = await res.json();
-  if (!res.ok) {
-    const msg = Object.values(data).flat().join(' ');
-    throw new Error(msg || 'Ошибка регистрации');
-  }
-  return data;
-};
-
-export const loginUser = async ({ username, password }) => {
-  const res = await fetch(
-    `${process.env.REACT_APP_API_URL}/token/`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    }
-  );
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Ошибка входа');
-
-  localStorage.setItem('accessToken', data.access);
-  localStorage.setItem('refreshToken', data.refresh);
-
-  return data;
 };

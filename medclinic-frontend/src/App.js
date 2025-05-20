@@ -8,7 +8,6 @@ import LoginForm         from './components/auth/LoginForm';
 import HomePage          from './components/pages/HomePage';
 import SchedulePage      from './components/pages/SchedulePage';
 import LicensePage       from './components/pages/LicensePage';
-
 import PatientDashboard  from './components/patient_dashboard/PatientDashboard';
 import DoctorDashboard   from './components/doctor_dashboard/DoctorDashboard';
 
@@ -17,37 +16,39 @@ function PrivateRoute({ children }) {
   return accessToken ? children : <Navigate to="/login" replace />;
 }
 
-function App() {
-  const { role, userId } = useContext(AuthContext);
+export default function App() {
+  const { role, patientProfileId, doctorProfileId } = useContext(AuthContext);
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
-        <Route path="/" element={<HomePage />} />
+        {/* public */}
+        <Route path="/"         element={<HomePage />} />
         <Route path="/register" element={<RegistrationForm />} />
-        <Route path="/login" element={<LoginForm />} />
+        <Route path="/login"    element={<LoginForm />} />
         <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/licenses" element={<LicensePage />} />
 
-        {/* Protected dashboard */}
+        {/* protected */}
         <Route
           path="/dashboard"
           element={
             <PrivateRoute>
               {role === 'doctor'
-                ? <DoctorDashboard doctorId={userId} />
-                : <PatientDashboard patientId={userId} />
+                ? doctorProfileId
+                  ? <DoctorDashboard doctorId={doctorProfileId} />
+                  : <p>Загрузка профиля врача…</p>
+                : patientProfileId
+                  ? <PatientDashboard patientId={patientProfileId} />
+                  : <p>Загрузка профиля пациента…</p>
               }
             </PrivateRoute>
           }
         />
 
-        {/* Fallback */}
+        {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;

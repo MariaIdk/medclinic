@@ -12,6 +12,7 @@ from .views import (
     ScheduleUploadView,
 )
 from . import views
+from .views import current_user
 from api.views_auth import RegisterView
 
 router = DefaultRouter()
@@ -34,4 +35,5 @@ urlpatterns += [
     path('specialties/', views.SpecialtyList.as_view(), name='specialties'),
     path('clinic-schedules/', views.ClinicScheduleList.as_view(), name='clinic-schedules'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('users/me/', current_user, name='current-user'),
 ]

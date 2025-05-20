@@ -1,0 +1,6 @@
+/* базовые стили для кабинета врача */
+.doctor-personal-info, .doctor-schedule, .doctor-patient-list {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  

@@ -63,6 +63,11 @@ class Specialty(models.Model):
 
 
 class Doctor(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='doctor_profile'
+    )
+
+    
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     patronymic = models.CharField(max_length=100, blank=True, null=True)

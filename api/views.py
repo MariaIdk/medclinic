@@ -130,42 +130,51 @@ class PatientDocumentViewSet(viewsets.ModelViewSet):
         )
         return response
 
+
+
 # class DoctorViewSet(viewsets.ModelViewSet):
-#     queryset = Doctor.objects.all()
+#     """
+#     API endpoint для операций с врачами.
+#     Поддерживает фильтрацию по ?user=<user_id> и по ?specialty=<specialty_id>
+#     """
 #     serializer_class = DoctorSerializer
 #     http_method_names = ['get']
+#     permission_classes = [permissions.IsAuthenticated]
 
 #     def get_queryset(self):
+#         qs = Doctor.objects.all()
+#         # сначала по user
+#         user_id = self.request.query_params.get('user')
+#         if user_id:
+#             qs = qs.filter(user__id=user_id)
+#         # потом — по specialty (если передано)
 #         specialty = self.request.query_params.get('specialty')
 #         if specialty:
-#             return self.queryset.filter(specialty=specialty)
-#         return self.queryset
-
+#             qs = qs.filter(specialty__id=specialty)
+#         return qs
+    
 class DoctorViewSet(viewsets.ModelViewSet):
     """
     API endpoint для операций с врачами.
     Поддерживает фильтрацию по ?user=<user_id> и по ?specialty=<specialty_id>
     """
     serializer_class = DoctorSerializer
-    http_method_names = ['get']
     permission_classes = [permissions.IsAuthenticated]
+    # Разрешаем GET, PATCH и PUT
+    http_method_names = ['get', 'patch', 'put', 'head', 'options']
 
     def get_queryset(self):
         qs = Doctor.objects.all()
-        # сначала по user
-        user_id = self.request.query_params.get('user')
+        user_id   = self.request.query_params.get('user')
+        specialty = self.request.query_params.get('specialty')
         if user_id:
             qs = qs.filter(user__id=user_id)
-        # потом — по specialty (если передано)
-        specialty = self.request.query_params.get('specialty')
         if specialty:
             qs = qs.filter(specialty__id=specialty)
         return qs
-    
 
 
 
-    
 class DoctorDocumentViewSet(viewsets.ModelViewSet):
     """
     API endpoint для операций с документами врача.

@@ -1,7 +1,7 @@
 // PatientDashboard.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../styles/PatientDashboard.css';
+import '../../styles/Dashboard.css';
 import { getPatientDocuments, deletePatientDocument } from '../../api';
 import AppointmentForm from './appointments/AppointmentForm';
 import MyAppointments from './appointments/MyAppointments';

@@ -34,10 +34,30 @@ class SpecialtySerializer(serializers.ModelSerializer):
         model = Specialty
         fields = ['id', 'name']
 
+# class DoctorSerializer(serializers.ModelSerializer):
+#     specialty = SpecialtySerializer(read_only=True)
+#     email = serializers.EmailField(read_only=True)
+#     phone_number = serializers.CharField(read_only=True)
+
+#     class Meta:
+#         model = Doctor
+#         fields = [
+#             'id',
+#             'first_name',
+#             'last_name',
+#             'patronymic',
+#             'specialty',
+#             'email',
+#             'phone_number',
+#         ]
+
 class DoctorSerializer(serializers.ModelSerializer):
-    specialty = SpecialtySerializer(read_only=True)
-    email = serializers.EmailField(read_only=True)
-    phone_number = serializers.CharField(read_only=True)
+    specialty               = SpecialtySerializer(read_only=True)
+    email                   = serializers.EmailField(required=True)
+    phone_number            = serializers.CharField(required=True)
+    education               = serializers.CharField(required=True)
+    hired_date              = serializers.DateField(read_only=True)
+    total_experience_years  = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Doctor
@@ -49,7 +69,15 @@ class DoctorSerializer(serializers.ModelSerializer):
             'specialty',
             'email',
             'phone_number',
+            'hired_date',
+            'total_experience_years',
+            'education',
         ]
+        read_only_fields = ['specialty', 'hired_date', 'total_experience_years']
+
+
+
+
 
 class PatientDocumentSerializer(serializers.ModelSerializer):
     uploaded_by_doctor = DoctorSerializer(read_only=True)

@@ -1,59 +1,62 @@
 // src/components/doctor_dashboard/DoctorDashboard.js
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/AuthContext';
 import '../../styles/Dashboard.css';
-import PersonalInfo from './PersonalInfo';
-import MySchedule from './MySchedule';
-import PatientList from './PatientList';
+
+import DoctorPersonalInfo from './DoctorPersonalInfo';
+import DoctorSchedule     from './schedule/DoctorSchedule';
+import PatientList        from './PatientList';
 
 export default function DoctorDashboard({ doctorId }) {
-  const [section, setSection] = useState('personalInfo');
-  const [scheduleView, setScheduleView] = useState('slots'); // 'slots' или 'appointments'
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10));
+  const { logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const renderContent = () => {
-    switch (section) {
-      case 'personalInfo':
-        return <PersonalInfo doctorId={doctorId} />;
-      case 'schedule':
-        return (
-          <MySchedule
-            doctorId={doctorId}
-            view={scheduleView}
-            onViewChange={setScheduleView}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-          />
-        );
-      case 'patients':
-        return <PatientList doctorId={doctorId} />;
-      default:
-        return null;
-    }
+  const [tab, setTab] = useState('personal');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
     <div className="dashboard-container">
       <aside className="dashboard-sidebar">
         <ul>
-          <li onClick={() => setSection('personalInfo')}
-              className={section==='personalInfo'?'active':''}>
+          <li
+            className={tab === 'personal' ? 'active' : ''}
+            onClick={() => setTab('personal')}
+          >
             Личная информация
           </li>
-          <li onClick={() => setSection('schedule')}
-              className={section==='schedule'?'active':''}>
+          <li
+            className={tab === 'schedule' ? 'active' : ''}
+            onClick={() => setTab('schedule')}
+          >
             Моё расписание
           </li>
-          <li onClick={() => setSection('patients')}
-              className={section==='patients'?'active':''}>
+          <li
+            className={tab === 'patients' ? 'active' : ''}
+            onClick={() => setTab('patients')}
+          >
             Пациенты
           </li>
-          <li onClick={() => { /* сюда logout */ }}>
+          <li onClick={handleLogout}>
             Выйти
           </li>
         </ul>
       </aside>
+
       <main className="dashboard-content">
-        {renderContent()}
+        {tab === 'personal' && (
+          <DoctorPersonalInfo doctorId={doctorId} />
+        )}
+        {tab === 'schedule' && (
+          <DoctorSchedule doctorId={doctorId} />
+        )}
+        {tab === 'patients' && (
+          <PatientList doctorId={doctorId} />
+        )}
       </main>
     </div>
   );

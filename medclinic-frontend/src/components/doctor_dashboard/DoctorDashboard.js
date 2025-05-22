@@ -6,6 +6,7 @@ import '../../styles/Dashboard.css';
 
 import DoctorPersonalInfo from './DoctorPersonalInfo';
 import DoctorSchedule     from './schedule/DoctorSchedule';
+import DoctorAppointments        from './DoctorAppointments';
 import PatientList        from './PatientList';
 
 export default function DoctorDashboard({ doctorId }) {
@@ -36,6 +37,12 @@ export default function DoctorDashboard({ doctorId }) {
             Моё расписание
           </li>
           <li
+            className={tab === 'appointments' ? 'active' : ''}
+            onClick={() => setTab('appointments')}
+          >
+            Записи
+          </li>
+          <li
             className={tab === 'patients' ? 'active' : ''}
             onClick={() => setTab('patients')}
           >
@@ -53,6 +60,9 @@ export default function DoctorDashboard({ doctorId }) {
         )}
         {tab === 'schedule' && (
           <DoctorSchedule doctorId={doctorId} />
+        )}
+        {tab === 'appointments' && (
+          <DoctorAppointments doctorId={doctorId} />
         )}
         {tab === 'patients' && (
           <PatientList doctorId={doctorId} />

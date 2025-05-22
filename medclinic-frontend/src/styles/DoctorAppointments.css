@@ -1,0 +1,68 @@
+/* src/styles/DoctorAppointments.css */
+
+.doctor-appointments {
+    max-width: 100%;
+  }
+  
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .filter-item label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  
+  .filter-item input,
+  .filter-item select {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .suggestions {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 200px;
+    z-index: 10;
+  }
+  
+  .suggestions li {
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+  }
+  
+  .suggestions li:hover {
+    background: #f0f0f0;
+  }
+  
+  .doctor-appointments-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .doctor-appointments-table th,
+  .doctor-appointments-table td {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+  }
+  
+  .doctor-appointments-table tr:nth-child(even) {
+    background: #fafafa;
+  }
+  
+  .error {
+    color: red;
+  }
+  

@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { authFetch } from '../../../api';
 import '../../../styles/DoctorAppointmentModal.css';
 
-export default function DoctorAppointmentModal({ 
-  slotData, 
+export default function DoctorAppointmentModal({
+  slotData,
   services,
   onClose
 }) {
@@ -16,25 +16,27 @@ export default function DoctorAppointmentModal({
     reason: ''
   });
 
-  const filteredServices = services.filter(s => 
-    s.direction === slotData.direction
+  const filteredServices = services.filter(
+    (s) => s.direction === slotData.direction
   );
 
   useEffect(() => {
     const loadData = async () => {
       try {
         if (slotData.appointment) {
-          const res = await authFetch(`/api/appointments/${slotData.appointment.id}/`);
-          setAppointmentDetails(await res.json());
+          const res = await authFetch(
+            `/api/appointments/${slotData.appointment.id}/`
+          );
+          const data = await res.json();
+          setAppointmentDetails(data);
         } else {
           const patientsRes = await authFetch('/api/patients/');
           setPatients(await patientsRes.json());
-          
-          // Автовыбор первой услуги
-          if (filteredServices.length > 0) {
-            setFormData(prev => ({
+          // auto-select first service
+          if (filteredServices.length) {
+            setFormData((prev) => ({
               ...prev,
-              service: filteredServices[0].id
+              service: filteredServices[0].id.toString()
             }));
           }
         }
@@ -44,6 +46,13 @@ export default function DoctorAppointmentModal({
     };
     loadData();
   }, [slotData]);
+
+  // Lookup service name for existing appointment
+  const getServiceName = () => {
+    if (!appointmentDetails) return '';
+    const svc = services.find((s) => s.id === appointmentDetails.service);
+    return svc ? svc.name : appointmentDetails.service;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,7 +67,7 @@ export default function DoctorAppointmentModal({
           appointment_time: slotData.time
         })
       });
-      
+
       if (!res.ok) throw new Error('Ошибка сохранения');
       onClose();
       window.location.reload();
@@ -70,8 +79,12 @@ export default function DoctorAppointmentModal({
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <button className="modal-close" onClick={onClose}>×</button>
-        <h3>{slotData.date} {slotData.time}</h3>
+        <button className="modal-close" onClick={onClose}>
+          ×
+        </button>
+        <h3>
+          {slotData.date} {slotData.time}
+        </h3>
         <p>Кабинет: {slotData.cabinet}</p>
 
         {slotData.isBooked ? (
@@ -79,28 +92,22 @@ export default function DoctorAppointmentModal({
             <div className="existing-appointment">
               <div className="form-group">
                 <label>Пациент:</label>
-                <a 
-                  href={`/patients/${appointmentDetails.patient.id}`} 
+                <a
+                  href={`/patients/${appointmentDetails.patient}`}
                   className="patient-link"
                 >
                   {appointmentDetails.patient_name}
                 </a>
               </div>
-              
+
               <div className="form-group">
                 <label>Услуга:</label>
-                <input 
-                  value={appointmentDetails.service?.name || ''} 
-                  readOnly 
-                />
+                <input value={getServiceName()} readOnly />
               </div>
 
               <div className="form-group">
                 <label>Причина:</label>
-                <textarea 
-                  value={appointmentDetails.reason} 
-                  readOnly 
-                />
+                <textarea value={appointmentDetails.reason} readOnly />
               </div>
 
               <div className="form-group">
@@ -113,10 +120,12 @@ export default function DoctorAppointmentModal({
                 </select>
               </div>
 
-              {['in_progress', 'completed'].includes(appointmentDetails.status) && (
-                <button 
+              {appointmentDetails.status === 'completed' && (
+                <button
                   className="btn-go-record"
-                  onClick={() => window.location.href = `/appointments/${appointmentDetails.id}`}
+                  onClick={() =>
+                    (window.location.href = `/appointments/${appointmentDetails.id}`)
+                  }
                 >
                   Перейти к записи
                 </button>
@@ -132,10 +141,12 @@ export default function DoctorAppointmentModal({
               <select
                 required
                 value={formData.patient}
-                onChange={e => setFormData({...formData, patient: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, patient: e.target.value })
+                }
               >
                 <option value="">Выберите пациента</option>
-                {patients.map(p => (
+                {patients.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.last_name} {p.first_name}
                   </option>
@@ -148,10 +159,15 @@ export default function DoctorAppointmentModal({
               <select
                 required
                 value={formData.service}
-                onChange={e => setFormData({...formData, service: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, service: e.target.value })
+                }
               >
-                {filteredServices.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                <option value="">Выберите услугу</option>
+                {filteredServices.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -161,7 +177,9 @@ export default function DoctorAppointmentModal({
               <textarea
                 required
                 value={formData.reason}
-                onChange={e => setFormData({...formData, reason: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
               />
             </div>
 

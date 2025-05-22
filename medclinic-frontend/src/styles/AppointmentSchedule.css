@@ -197,60 +197,6 @@
     flex: 1;
   }
 
-
-
-/* Добавить в AppointmentSchedule.css */
-.past-slot {
-  background-color: #f8f9fa;
-  color: #6c757d;
-}
-
-.past-slot.booked {
-  background-color: #fff3e0 !important;
-  color: #ff6b6b;
-}
-
-.past-empty {
-  background-color: #f8f9fa !important;
-  cursor: not-allowed !important;
-}
-
-.past-expired {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  font-size: 0.8em;
-  color: #ff6b6b;
-}
-
-.clickable {
-  cursor: pointer !important;
-  transition: transform 0.2s;
-}
-
-.clickable:hover {
-  transform: scale(1.05);
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.booked {
-  background-color: #ffe0e0;
-}
-
-.free {
-  background-color: #e0ffe0;
-}
-
-.past-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255,255,255,0.7);
-}
-
 /* Doctor’s schedule slot colors & hovers */
 
 /* future free slots */

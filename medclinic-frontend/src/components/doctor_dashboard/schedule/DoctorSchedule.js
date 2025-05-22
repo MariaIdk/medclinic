@@ -1,179 +1,168 @@
-// src/components/doctor_dashboard/DoctorSchedule.js
-import React, { useEffect, useState, useContext } from "react";
-import "../../../styles/AppointmentSchedule.css";
-import { authFetch } from "../../../api";
-import { AuthContext } from "../../../contexts/AuthContext";
+import React, { useState, useEffect, useContext } from 'react';
+import { authFetch } from '../../../api';
+import { AuthContext } from '../../../contexts/AuthContext';
+import AppointmentModal from './AppointmentModal';
+import '../../../styles/AppointmentSchedule.css';  // same file as patient
 
-const weekdays = [
-  { value: 1, label: "Пн" },
-  { value: 2, label: "Вт" },
-  { value: 3, label: "Ср" },
-  { value: 4, label: "Чт" },
-  { value: 5, label: "Пт" },
-  { value: 6, label: "Сб" },
-  { value: 7, label: "Вс" },
-];
+const weekdays = [1, 2, 3, 4, 5, 6, 7];
+const weekdayLabels = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
 function formatDate(date) {
-  const d = date.getDate().toString().padStart(2, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  const d = date.getDate().toString().padStart(2,'0');
+  const m = (date.getMonth()+1).toString().padStart(2,'0');
   return `${d}.${m}`;
 }
 
 export default function DoctorSchedule({ doctorId }) {
   const { accessToken } = useContext(AuthContext);
-
   const [weekOffset, setWeekOffset] = useState(0);
+  const [schedules, setSchedules]   = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [services, setServices]     = useState([]);
+  const [modalData, setModalData]   = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+
+  // compute monday/sunday
   const today = new Date();
-  const dow = today.getDay() || 7;
+  const dow   = today.getDay() || 7;
   const monday = new Date(today);
-  monday.setDate(today.getDate() - (dow - 1) + weekOffset * 7);
+  monday.setDate(today.getDate() - (dow-1) + weekOffset*7);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const [days, setDays] = useState({});
-  const [blocked, setBlocked] = useState({});
-
+  // load schedules, appointments, services
   useEffect(() => {
-    if (!doctorId) return;
-    authFetch(
-      `${process.env.REACT_APP_API_URL}/clinic-schedules/?doctor=${doctorId}`
-    )
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => {
-        const map = {};
-        data.forEach((s) => {
-          const normalizeTime = (t) => t.slice(0, 5).padStart(5, "0");
-          map[s.weekday] = {
-            start: normalizeTime(s.start_time),
-            end: normalizeTime(s.end_time),
-            duration: s.appointment_duration,
-            cabinet: s.cabinet,
-          };
-        });
-        setDays(map);
-      })
-      .catch(console.error);
-  }, [accessToken, doctorId]);
-
-  useEffect(() => {
-    if (!doctorId) return;
-    (async () => {
-      const m = {};
-      await Promise.all(
-        weekdays.map(async ({ value }) => {
-          const d = new Date(monday);
-          d.setDate(monday.getDate() + value - 1);
-          const iso = d.toISOString().slice(0, 10);
-          const res = await authFetch(
-            `${process.env.REACT_APP_API_URL}/appointments/` +
-              `?doctor=${doctorId}&appointment_date=${iso}&status=scheduled`
-          );
-          const apps = res.ok ? await res.json() : [];
-          m[value] = new Set(apps.map((a) => a.appointment_time.slice(0, 5)));
-        })
-      );
-      setBlocked(m);
-    })();
-  }, [accessToken, doctorId, monday]);
-
-  const generateTimeSlots = () => {
-    const slots = [];
-    
-    Object.values(days).forEach(({ start, end, duration }) => {
-      let [h, m] = start.split(":").map(Number);
-      const [endH, endM] = end.split(":").map(Number);
-      
-      const startTotal = h * 60 + m;
-      const endTotal = endH * 60 + endM;
-      
-      for (let time = startTotal; time < endTotal; time += duration) {
-        const hours = Math.floor(time / 60);
-        const minutes = time % 60;
-        const slot = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-        if (!slots.includes(slot)) slots.push(slot);
+    async function load() {
+      try {
+        const [sr, ar, svr] = await Promise.all([
+          authFetch(`/api/clinic-schedules/?doctor=${doctorId}`),
+          authFetch(`/api/appointments/?doctor=${doctorId}&status=all`),
+          authFetch('/api/services/')
+        ]);
+        if (!sr.ok || !ar.ok || !svr.ok) throw new Error('Ошибка загрузки');
+        const [sd, ad, sv] = await Promise.all([ sr.json(), ar.json(), svr.json() ]);
+        setSchedules(sd);
+        setAppointments(ad);
+        setServices(sv);
+        setLoading(false);
+      } catch (e) {
+        setError(e.message);
+        setLoading(false);
       }
-    });
+    }
+    if (doctorId && accessToken) load();
+  }, [doctorId, accessToken, weekOffset]);
 
-    return slots.sort();
+  const getStatus = (date, time) => {
+    const dt = new Date(`${date}T${time}`);
+    const now = new Date();
+    const isPast = dt < now;
+    const appt = appointments.find(a => 
+      a.appointment_date === date && a.appointment_time.startsWith(time)
+    );
+    return {
+      isBooked: !!appt,
+      isPast,
+      isCompleted: appt?.status === 'completed',
+      appointment: appt
+    };
   };
 
-  const slots = generateTimeSlots();
+  // build slots per day
+  const slotsByDate = {};
+  schedules.forEach(sch => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + (sch.weekday - 1));
+    const key = d.toISOString().slice(0,10);
+    let [h,m] = sch.start_time.split(':').map(Number);
+    const [eH,eM] = sch.end_time.split(':').map(Number);
+    const dur = sch.appointment_duration;
+    while (h < eH || (h===eH && m<eM)) {
+      const time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const st = getStatus(key, time);
+      slotsByDate[key] = slotsByDate[key] || [];
+      slotsByDate[key].push({
+        time, cabinet: sch.cabinet,
+        ...st, direction: sch.direction
+      });
+      m += dur;
+      if (m>=60){ h+=Math.floor(m/60); m%=60; }
+    }
+  });
+
+  if (loading) return <div className="schedule-wrapper">Загрузка...</div>;
+  if (error)   return <div className="schedule-wrapper">Ошибка: {error}</div>;
+
+  // find max rows
+  const maxRows = Math.max(0, ...Object.values(slotsByDate).map(arr => arr.length));
 
   return (
     <div className="schedule-wrapper">
       <div className="schedule-controls">
         <div className="week-selector">
-          <button onClick={() => setWeekOffset((o) => o - 1)} disabled={weekOffset <= 0}>
-            ‹
-          </button>
-          <span>
-            Расписание с {formatDate(monday)} до {formatDate(sunday)}
-          </span>
-          <button onClick={() => setWeekOffset((o) => o + 1)}>›</button>
+          <button onClick={()=>setWeekOffset(o=>o-1)} disabled={weekOffset===0}>‹</button>
+          <span>Расписание с {formatDate(monday)} до {formatDate(sunday)}</span>
+          <button onClick={()=>setWeekOffset(o=>o+1)}>›</button>
         </div>
       </div>
 
-      <div
-        className="schedule-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(7, 1fr)`,
-        }}
-      >
-        {weekdays.map((w) => {
-          const day = new Date(monday);
-          day.setDate(monday.getDate() + w.value - 1);
-          const info = days[w.value];
+      <div className="schedule-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(7,1fr)`
+      }}>
+        {/* headers */}
+        {weekdays.map((wd,i)=> {
+          const d = new Date(monday);
+          d.setDate(monday.getDate()+wd-1);
+          const dk = d.toISOString().slice(0,10);
+          const cab = slotsByDate[dk]?.[0]?.cabinet;
           return (
-            <div key={w.value} className="cell header">
-              <div className="weekday-label">{w.label}</div>
-              <div className="grid-date">{formatDate(day)}</div>
-              {info && <div className="cabinet">Каб. {info.cabinet}</div>}
+            <div key={wd} className="cell header">
+              {weekdayLabels[i]}
+              <div className="grid-date">{formatDate(d)}</div>
+              {cab && <div className="grid-date">Каб. {cab}</div>}
             </div>
           );
         })}
 
-        {slots.map((slot) => (
-          <React.Fragment key={slot}>
-            {weekdays.map((w) => {
-              const info = days[w.value];
-              if (!info) {
-                return <div key={`${w.value}-${slot}`} className="cell inactive" />;
-              }
-              
-              const [slotH, slotM] = slot.split(":").map(Number);
-              const slotTotal = slotH * 60 + slotM;
-              const [startH, startM] = info.start.split(":").map(Number);
-              const [endH, endM] = info.end.split(":").map(Number);
-              const startTotal = startH * 60 + startM;
-              const endTotal = endH * 60 + endM;
-
-              const isInRange = slotTotal >= startTotal && slotTotal < endTotal;
-              const isBlocked = blocked[w.value]?.has(slot);
-
-              return (
-                <div
-                  key={`${w.value}-${slot}`}
-                  className={`cell timeslot ${
-                    !isInRange ? "inactive" : isBlocked ? "blocked" : "active"
-                  }`}
-                  onClick={() => {
-                    if (isInRange && !isBlocked) {
-                      alert(`Выбрано ${slot}, ${w.label}`);
-                    }
-                  }}
-                >
-                  {isInRange && !isBlocked && (
-                    <div className="slot-time">{slot}</div>
-                  )}
-                  {isBlocked && <div className="blocked-slot">{slot}</div>}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+        {/* slots */}
+        {Array.from({length: maxRows}).map((_, row) =>
+          weekdays.map((wd,i)=> {
+            const d = new Date(monday);
+            d.setDate(monday.getDate()+wd-1);
+            const dk = d.toISOString().slice(0,10);
+            const slot = slotsByDate[dk]?.[row];
+            if (!slot) return <div key={`${dk}-${row}`} className="cell inactive"/>;
+            const cls = [
+              'cell','timeslot',
+              slot.isPast
+                ? slot.isBooked
+                  ? '' // still keep booked style
+                  : 'inactive'
+                : slot.isBooked
+                  ? 'booked'
+                  : 'free'
+            ].join(' ');
+            return (
+              <div key={`${dk}-${slot.time}`} className={cls}
+                   onClick={()=>!slot.isPast && setModalData({
+                     ...slot,date:dk,doctorId:doctorId
+                   })}>
+                {slot.time}
+              </div>
+            );
+          })
+        )}
       </div>
+
+      {modalData && (
+        <AppointmentModal
+          slotData={modalData}
+          services={services}
+          onClose={()=>setModalData(null)}
+        />
+      )}
     </div>
   );
 }

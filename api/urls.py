@@ -36,4 +36,5 @@ urlpatterns += [
     path('clinic-schedules/', views.ClinicScheduleList.as_view(), name='clinic-schedules'),
     path('register/', RegisterView.as_view(), name='register'),
     path('users/me/', current_user, name='current-user'),
+    path('patients/', views.PatientListView.as_view(), name='patient-list'),
 ]

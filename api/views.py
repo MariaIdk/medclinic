@@ -209,7 +209,14 @@ class ClinicScheduleViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+class PatientListView(generics.ListAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        # Можно добавить фильтрацию по врачу при необходимости
+        return super().get_queryset()
 
 
 

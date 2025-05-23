@@ -223,23 +223,26 @@ class PatientListView(generics.ListAPIView):
 class AppointmentViewSet(viewsets.ModelViewSet):
     """
     API endpoint для операций с приёмами.
-    Теперь:
-      - Обновляем просроченные scheduled → no_show
-      - Фильтруем по ?patient=… или, если нет patient и нет doctor, — по текущему пациенту
-      - При ?doctor=… возвращаем все приёмы этого доктора (без фильтра по текущему пациенту)
+    - Автоматически переводим просроченные scheduled → no_show
+    - Поддерживаем фильтрацию по ?patient, ?doctor, ?appointment_date и ?status
+    - GET /appointments/:id/ (retrieve) всегда возвращает запись (если она не is_deleted)
     """
     serializer_class = AppointmentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # ─── 1) Обновляем все просроченные scheduled → no_show ───
+        # 1) Если это retrieve (GET /appointments/:id/), возвращаем именно эту запись
+        if self.action == 'retrieve':
+            return Appointment.objects.filter(is_deleted=False)
+
+        # 2) Обновляем статус просроченных scheduled → no_show
         now = timezone.now()
-        scheduled_qs = Appointment.objects.filter(status='scheduled', is_deleted=False)
-        for appt in scheduled_qs:
+        for appt in Appointment.objects.filter(status='scheduled', is_deleted=False):
             appt_start = timezone.make_aware(
                 datetime.combine(appt.appointment_date, appt.appointment_time),
                 timezone.get_current_timezone()
             )
+            # ищем расписание, чтобы узнать длительность
             try:
                 sched = ClinicSchedule.objects.get(
                     doctor=appt.doctor,
@@ -248,46 +251,46 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 duration = sched.appointment_duration
             except ClinicSchedule.DoesNotExist:
                 duration = 15
-            appt_end  = appt_start + timedelta(minutes=duration)
-            cutoff_dt = appt_end + timedelta(minutes=15)
-            if now >= cutoff_dt:
+            appt_end = appt_start + timedelta(minutes=duration)
+            cutoff = appt_end + timedelta(minutes=15)
+            if now >= cutoff:
                 appt.status = 'no_show'
                 appt.save(update_fields=['status'])
 
-        # ─── 2) Основной queryset ───
+        # 3) Основной queryset для list, update, delete, etc.
         qs = Appointment.objects.filter(is_deleted=False)
 
-        # Статус (по умолчанию 'scheduled')
+        # фильтрация по статусу
         status_param = self.request.query_params.get('status')
-        if status_param:
-            if status_param.lower() != 'all':
-                qs = qs.filter(status=status_param)
-        else:
+        if status_param and status_param.lower() != 'all':
+            qs = qs.filter(status=status_param)
+        elif status_param is None:
+            # по умолчанию только scheduled
             qs = qs.filter(status='scheduled')
 
-        # ─── Фильтрация по пациенту ───
+        # фильтрация по пациенту
         patient_param = self.request.query_params.get('patient')
         if patient_param:
             qs = qs.filter(patient__id=patient_param)
-        elif not self.request.query_params.get('doctor'):
-            # если не запрашиваем по доктору и нет ?patient — возвращаем "мои" записи
-            user = self.request.user
-            if hasattr(user, 'patient_profile'):
-                qs = qs.filter(patient=user.patient_profile)
+        else:
+            # если нет doctor и нет patient — возвращаем "мои" записи пациента
+            if not self.request.query_params.get('doctor'):
+                user = self.request.user
+                if hasattr(user, 'patient_profile'):
+                    qs = qs.filter(patient=user.patient_profile)
 
-        # ─── Фильтрация по доктору и дате ───
-        doctor_id = self.request.query_params.get('doctor')
-        if doctor_id:
-            qs = qs.filter(doctor__id=doctor_id)
-        appointment_date = self.request.query_params.get('appointment_date')
-        if appointment_date:
-            qs = qs.filter(appointment_date=appointment_date)
+        # фильтрация по доктору и дате
+        doctor_param = self.request.query_params.get('doctor')
+        if doctor_param:
+            qs = qs.filter(doctor__id=doctor_param)
+        date_param = self.request.query_params.get('appointment_date')
+        if date_param:
+            qs = qs.filter(appointment_date=date_param)
 
         return qs
 
     def perform_create(self, serializer):
         serializer.save()
-
 
 
 

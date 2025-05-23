@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { authFetch } from '../../api';
+import React from 'react';
 import '../../styles/DoctorAppointments.css';
 
 export default function DoctorAppointmentDetailModal({
@@ -7,27 +6,9 @@ export default function DoctorAppointmentDetailModal({
   services,
   onClose
 }) {
-  const [details, setDetails] = useState(initialData);
-
-  useEffect(() => {
-    // only refetch if not just "scheduled"
-    if (initialData.status !== 'scheduled') {
-      authFetch(`/api/appointments/${initialData.id}/`)
-        .then(r => {
-          if (!r.ok) throw new Error('Не удалось загрузить детали');
-          return r.json();
-        })
-       .then(d => {
-          setDetails({
-            ...d,
-            cabinet: initialData.cabinet  // preserve cabinet
-          });
-        })
-        .catch(console.error);
-    }
-  }, [initialData]);
-
+  const details = initialData;
   const svc = services.find(s => s.id === details.service);
+
   const showGo = ['in_progress','completed','no_show'].includes(details.status);
   const isDone = details.status === 'completed';
 
@@ -46,20 +27,25 @@ export default function DoctorAppointmentDetailModal({
           <>
             <div className="form-group">
               <label>Диагноз:</label>
-              <textarea readOnly value={details.diagnosis||''} />
+              <textarea readOnly value={details.diagnosis || ''} />
             </div>
             <div className="form-group">
               <label>Рекомендации:</label>
-              <textarea readOnly value={details.recommendations||''} />
+              <textarea readOnly value={details.recommendations || ''} />
             </div>
             <div className="form-group">
               <label>Документы:</label>
-              {details.documents.length
-                ? details.documents.map(doc => (
-                    <div key={doc.id}><a href={doc.url}>{doc.name}</a></div>
-                  ))
-                : <p>Нет</p>
-              }
+              {details.documents && details.documents.length > 0 ? (
+                details.documents.map(doc => (
+                  <div key={doc.id}>
+                    <a href={doc.document_file} target="_blank" rel="noopener noreferrer">
+                      {doc.description}
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <p>Нет</p>
+              )}
             </div>
           </>
         )}

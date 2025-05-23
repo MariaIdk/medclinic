@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react'; 
 import { authFetch } from '../../api';
 import { AuthContext } from '../../contexts/AuthContext';
 import DoctorAppointmentDetailModal from './DoctorAppointmentDetailModal';
@@ -25,31 +25,37 @@ export default function DoctorAppointments({ doctorId }) {
 
   useEffect(() => {
     let url = `/api/appointments/?doctor=${doctorId}&status=all&ordering=appointment_date`;
-    if (filters.date) url += `&appointment_date=${filters.date}`;
+    if (filters.date)    url += `&appointment_date=${filters.date}`;
     if (filters.patientId) url += `&patient=${filters.patientId}`;
     authFetch(url)
       .then(r => r.ok && r.json())
       .then(data => {
+        // отфильтруем отменённые
         data = data.filter(a => a.status !== 'cancelled');
-        if (filters.status !== 'all') data = data.filter(a => a.status === filters.status);
+        if (filters.status !== 'all') {
+          data = data.filter(a => a.status === filters.status);
+        }
+        // подставим название услуги
         data = data.map(a => ({
           ...a,
-          service_name: (services.find(s => s.id === a.service) || {}).name || a.service
+          service_name: services.find(s => s.id === a.service)?.name || a.service
         }));
         setAppointments(data);
       })
       .catch(console.error);
   }, [doctorId, filters, services]);
 
-  const openModal = async appt => {
-    // fetch clinic-schedule to get cabinet
+  // открываем модалку, сразу передаем весь объект a, в том числе documents
+  const openModal = appt => {
+    // подтягиваем кабинет отдельно
     const date = new Date(appt.appointment_date);
     const wd = date.getDay() || 7;
-    const schedRes = await authFetch(
-      `/api/clinic-schedules/?doctor=${doctorId}&weekday=${wd}`
-    );
-    const sched = schedRes.ok ? await schedRes.json() : [];
-    setModalAppt({ ...appt, cabinet: sched[0]?.cabinet || '—' });
+    authFetch(`/api/clinic-schedules/?doctor=${doctorId}&weekday=${wd}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(sched => {
+        setModalAppt({ ...appt, cabinet: sched[0]?.cabinet || '—' });
+      })
+      .catch(_ => setModalAppt({ ...appt, cabinet: '—' }));
   };
 
   return (
@@ -72,7 +78,7 @@ export default function DoctorAppointments({ doctorId }) {
               const match = patients.find(p =>
                 p.patient_name.toLowerCase().includes(q)
               );
-              setFilters(f => ({ ...f, patientId: match ? match.id : null }));
+              setFilters(f => ({ ...f, patientId: match?.id || null }));
             }}
           />
         </label>

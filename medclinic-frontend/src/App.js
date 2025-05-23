@@ -10,6 +10,8 @@ import SchedulePage      from './components/pages/SchedulePage';
 import LicensePage       from './components/pages/LicensePage';
 import PatientDashboard  from './components/patient_dashboard/PatientDashboard';
 import DoctorDashboard   from './components/doctor_dashboard/DoctorDashboard';
+import DoctorAppointmentEdit from './components/doctor_dashboard/DoctorAppointmentEdit';
+
 
 function PrivateRoute({ children }) {
   const { accessToken } = useContext(AuthContext);
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="/login"    element={<LoginForm />} />
         <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/licenses" element={<LicensePage />} />
+        <Route path="/doctor/appointments/:id/edit" element={<DoctorAppointmentEdit />}
+/>
 
         {/* protected */}
         <Route

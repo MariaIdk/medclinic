@@ -1,4 +1,6 @@
+// src/components/doctor_dashboard/DoctorAppointmentDetailModal.js
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/DoctorAppointments.css';
 
 export default function DoctorAppointmentDetailModal({
@@ -6,6 +8,7 @@ export default function DoctorAppointmentDetailModal({
   services,
   onClose
 }) {
+  const navigate = useNavigate();
   const details = initialData;
   const svc = services.find(s => s.id === details.service);
 
@@ -16,7 +19,11 @@ export default function DoctorAppointmentDetailModal({
     <div className="modal-overlay">
       <div className="modal-window">
         <button className="modal-close" onClick={onClose}>×</button>
-        <h3>{details.appointment_date} в {details.appointment_time.slice(0,5)}</h3>
+
+        <h3>
+          {details.appointment_date} в {details.appointment_time.slice(0,5)}
+        </h3>
+
         <p><strong>Кабинет:</strong> {details.cabinet}</p>
         <p><strong>Пациент:</strong> {details.patient_name}</p>
         <p><strong>Услуга:</strong> {svc?.name || details.service}</p>
@@ -38,7 +45,11 @@ export default function DoctorAppointmentDetailModal({
               {details.documents && details.documents.length > 0 ? (
                 details.documents.map(doc => (
                   <div key={doc.id}>
-                    <a href={doc.document_file} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={doc.document_file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {doc.description}
                     </a>
                   </div>
@@ -53,7 +64,7 @@ export default function DoctorAppointmentDetailModal({
         {showGo && (
           <button
             className="modal-confirm"
-            onClick={() => window.location.href = `/appointments/${details.id}`}
+            onClick={() => navigate(`/doctor/appointments/${details.id}/edit`)}
           >
             Перейти к записи
           </button>

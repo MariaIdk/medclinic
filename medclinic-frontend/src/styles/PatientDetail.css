@@ -1,0 +1,23 @@
+/* src/components/doctor_dashboard/patients/PatientDetail.css */
+.patient-detail {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+  }
+  .patient-detail .card {
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .patient-detail .nav-tabs .nav-link {
+    cursor: pointer;
+  }
+  .patient-detail .nav-tabs .nav-link.active {
+    background-color: #e9ecef;
+    border-color: #dee2e6 #dee2e6 #fff;
+  }
+  .patient-detail .document-section {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  

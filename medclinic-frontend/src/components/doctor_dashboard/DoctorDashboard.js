@@ -7,7 +7,7 @@ import '../../styles/Dashboard.css';
 import DoctorPersonalInfo from './DoctorPersonalInfo';
 import DoctorSchedule     from './schedule/DoctorSchedule';
 import DoctorAppointments        from './DoctorAppointments';
-import PatientList        from './PatientList';
+import PatientList        from './patients/PatientList';
 
 export default function DoctorDashboard({ doctorId }) {
   const { logout } = useContext(AuthContext);

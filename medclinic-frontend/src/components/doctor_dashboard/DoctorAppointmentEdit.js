@@ -5,6 +5,10 @@ import { authFetch } from '../../api';
 import { AuthContext } from '../../contexts/AuthContext';
 import '../../styles/AppointmentSchedule.css';
 
+// Убираем возможное окончание `/api` из базового URL
+const rawApiUrl = process.env.REACT_APP_API_URL || '';
+const API_URL = rawApiUrl.replace(/\/api\/?$/, '');
+
 export default function DoctorAppointmentEdit() {
   const { accessToken } = useContext(AuthContext);
   const { id } = useParams();
@@ -66,8 +70,16 @@ export default function DoctorAppointmentEdit() {
     setNewFiles(nf => nf.filter((_, i) => i !== idx));
   };
 
+  // Помощник для открытия документа в новой вкладке
+  const getDocUrl = (doc) => {
+    let url = doc.document_file;
+    if (!/^https?:\/\//i.test(url)) {
+      url = `${API_URL}${url}`;
+    }
+    return url;
+  };
+
   const canEditDetails = status === 'completed';
-  const hasNew = newFiles.length > 0;
   const allDescFilled = newFiles.every(n => n.description.trim() !== '');
   const requiredFilled =
     status === 'completed'
@@ -195,10 +207,27 @@ export default function DoctorAppointmentEdit() {
             {docs.length === 0
               ? <p>Нет</p>
               : docs.map(doc => (
-                  <div key={doc.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <a href={doc.document_file} target="_blank" rel="noopener noreferrer">
+                  <div
+                    key={doc.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                    <button
+                      className="link-button"
+                      onClick={() => window.open(getDocUrl(doc), '_blank', 'noopener')}
+                      style={{
+                        padding: 0,
+                        border: 'none',
+                        background: 'none',
+                        color: '#007bff',
+                        cursor: 'pointer'
+                      }}
+                    >
                       {doc.description}
-                    </a>
+                    </button>
                     <button
                       style={{ marginLeft: '0.5rem' }}
                       onClick={() => removeExistingDoc(doc.id)}

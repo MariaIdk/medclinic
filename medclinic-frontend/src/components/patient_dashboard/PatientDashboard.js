@@ -28,6 +28,7 @@ export default function PatientDashboard({ patientId }) {
     setSelectedSection(section);
     if (section !== 'history') setHistorySubsection(null);
   };
+  
 
   // Мои документы
   // useEffect(() => {

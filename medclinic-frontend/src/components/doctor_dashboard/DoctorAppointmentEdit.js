@@ -45,13 +45,11 @@ export default function DoctorAppointmentEdit() {
     if (accessToken) load();
   }, [id, accessToken]);
 
-  // Обработчик выбора файлов: создаём массив объектов с пустым описанием
+  // добавить новые файлы
   const onFileChange = e => {
     const files = Array.from(e.target.files);
     setNewFiles(files.map(f => ({ file: f, description: '' })));
   };
-
-  // Изменение описания для нового файла
   const onDescChange = (idx, text) => {
     setNewFiles(nf => {
       const copy = [...nf];
@@ -59,23 +57,28 @@ export default function DoctorAppointmentEdit() {
       return copy;
     });
   };
-
-  // Удалить уже прикреплённый документ из списка
-  const removeExistingDoc = id => {
-    setDocs(d => d.filter(x => x.id !== id));
-  };
-
-  // Удалить только что добавленный файл из newFiles
   const removeNewFile = idx => {
     setNewFiles(nf => nf.filter((_, i) => i !== idx));
   };
 
-  // Помощник для открытия документа в новой вкладке
-  const getDocUrl = (doc) => {
-    let url = doc.document_file;
-    if (!/^https?:\/\//i.test(url)) {
-      url = `${API_URL}${url}`;
+  // удалить уже прикреплённый: и из M2M, и из БД
+  const removeExistingDoc = async docId => {
+    if (!window.confirm('Удалить этот документ полностью?')) return;
+    // 1) Отозвать связь с приёмом
+    setDocs(d => d.filter(x => x.id !== docId));
+    // 2) Удалить сам документ у пациента
+    const delRes = await authFetch(`/api/patient-documents/${docId}/`, {
+      method: 'DELETE'
+    });
+    if (!delRes.ok) {
+      alert('Ошибка удаления документа');
     }
+  };
+
+  // помогаем открыть старые документы
+  const getDocUrl = doc => {
+    let url = doc.document_file;
+    if (!/^https?:\/\//i.test(url)) url = `${API_URL}${url}`;
     return url;
   };
 
@@ -96,13 +99,11 @@ export default function DoctorAppointmentEdit() {
       originalStatus.current === 'completed' &&
       status !== 'completed' &&
       !window.confirm(
-        'Вы уверены? При смене статуса будут утеряны диагноз, рекомендации и прикреплённые документы.'
+        'При смене статуса будут утеряны диагноз, рекомендации и документы. Продолжить?'
       )
-    ) {
-      return;
-    }
+    ) return;
 
-    // 1) upload new docs
+    // 1) загрузить новые документы
     let uploadedIds = [];
     for (let { file, description } of newFiles) {
       const form = new FormData();
@@ -124,7 +125,7 @@ export default function DoctorAppointmentEdit() {
       }
     }
 
-    // 2) PATCH appointment
+    // 2) сохранить приём
     const payload = {
       status,
       diagnosis: canEditDetails ? diagnosis : '',
@@ -152,6 +153,8 @@ export default function DoctorAppointmentEdit() {
   return (
     <div className="schedule-wrapper">
       <h2>Детали приёма</h2>
+
+
 
       <div className="form-group">
         <label>Дата и время</label>
@@ -192,39 +195,17 @@ export default function DoctorAppointmentEdit() {
 
       {status === 'completed' && (
         <>
+          {/* Список существующих */}
           <div className="form-group">
-            <label>Диагноз</label>
-            <textarea value={diagnosis} onChange={e => setDiagnosis(e.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label>Рекомендации</label>
-            <textarea value={recommendations} onChange={e => setRecommendations(e.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label>Уже прикреплённые документы</label>
+            <label>Документы</label>
             {docs.length === 0
               ? <p>Нет</p>
               : docs.map(doc => (
-                  <div
-                    key={doc.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      marginBottom: '0.5rem'
-                    }}
-                  >
+                  <div key={doc.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <button
                       className="link-button"
                       onClick={() => window.open(getDocUrl(doc), '_blank', 'noopener')}
-                      style={{
-                        padding: 0,
-                        border: 'none',
-                        background: 'none',
-                        color: '#007bff',
-                        cursor: 'pointer'
-                      }}
+                      style={{ padding: 0, border: 'none', background: 'none', color: '#007bff', cursor: 'pointer' }}
                     >
                       {doc.description}
                     </button>
@@ -239,21 +220,17 @@ export default function DoctorAppointmentEdit() {
             }
           </div>
 
+          {/* Добавление новых */}
           <div className="form-group">
-            <label>Добавить новые документы</label>
+            <label>Добавить документы</label>
             <input type="file" multiple onChange={onFileChange} />
             {newFiles.map((nf, i) => (
               <div key={i} style={{ marginTop: '0.5rem' }}>
                 <strong>{nf.file.name}</strong>
-                <button
-                  style={{ marginLeft: '0.5rem' }}
-                  onClick={() => removeNewFile(i)}
-                >
-                  ×
-                </button>
+                <button style={{ marginLeft: '0.5rem' }} onClick={() => removeNewFile(i)}>×</button>
                 <input
                   type="text"
-                  placeholder="Описание документа"
+                  placeholder="Описание"
                   value={nf.description}
                   onChange={e => onDescChange(i, e.target.value)}
                   style={{ width: '100%', marginTop: '0.25rem' }}
@@ -266,11 +243,7 @@ export default function DoctorAppointmentEdit() {
       )}
 
       <div className="form-actions" style={{ marginTop: '1rem' }}>
-        <button
-          className="modal-confirm"
-          disabled={!saveEnabled}
-          onClick={handleSave}
-        >
+        <button className="modal-confirm" disabled={!saveEnabled} onClick={handleSave}>
           Сохранить
         </button>
         <button onClick={() => navigate(-1)} style={{ marginLeft: '0.5rem' }}>

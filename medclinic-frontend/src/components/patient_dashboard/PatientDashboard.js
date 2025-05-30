@@ -64,7 +64,7 @@ export default function PatientDashboard({ patientId }) {
     if (section === 'logout') return setShowLogoutConfirm(true);
 
     setSelectedSection(section);
-    if (section !== 'history') setHistorySubsection(null);
+    if (section !== 'history') setHistorySubsection('appointments');
   };
 
   const handleDeleteDocument = async (id) => {
